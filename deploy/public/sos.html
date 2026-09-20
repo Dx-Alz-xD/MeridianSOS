@@ -1,0 +1,2466 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MeridianSOS — Meridian city flood response</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --deep:#0B1E26; --hydro:#15697A; --hydro-2:#1E8A9C; --silt:#A9803F;
+  --signal:#D93A22; --signal-2:#F05A3E; --amber:#C4742A; --grass:#3F7A4B;
+  --paper:#EDEFEC; --surface:#FBFBF9; --surface-2:#F3F4F1; --line:#D3D8D4;
+  --ink:#0E1F27; --ink-2:#41565F; --ink-3:#6E8189;
+  --board:#0C222B; --board-line:#1C3B47; --board-ink:#CFE3E7;
+  --radius:10px; --radius-s:6px;
+  --shadow:0 1px 0 rgba(14,31,39,.06), 0 8px 24px -18px rgba(14,31,39,.55);
+  --rail:248px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#081419; --surface:#0E2028; --surface-2:#132831; --line:#20404B;
+    --ink:#E4EDEF; --ink-2:#9FB6BD; --ink-3:#77939C;
+    --hydro:#3FA3B5; --hydro-2:#59BDCE; --silt:#CFA063; --signal:#F2634A;
+    --signal-2:#FF7E66; --amber:#E39A52; --grass:#63A874;
+    --board:#061016; --board-line:#1A343F; --board-ink:#D6EBEF;
+    --shadow:0 1px 0 rgba(0,0,0,.4), 0 10px 28px -20px rgba(0,0,0,.9);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#081419; --surface:#0E2028; --surface-2:#132831; --line:#20404B;
+  --ink:#E4EDEF; --ink-2:#9FB6BD; --ink-3:#77939C;
+  --hydro:#3FA3B5; --hydro-2:#59BDCE; --silt:#CFA063; --signal:#F2634A;
+  --signal-2:#FF7E66; --amber:#E39A52; --grass:#63A874;
+  --board:#061016; --board-line:#1A343F; --board-ink:#D6EBEF;
+  --shadow:0 1px 0 rgba(0,0,0,.4), 0 10px 28px -20px rgba(0,0,0,.9);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  font-size:15px; line-height:1.55; -webkit-text-size-adjust:100%;
+  overflow:hidden;
+}
+h1,h2,h3,h4{font-family:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;font-weight:600;letter-spacing:.01em;margin:0}
+h1{font-size:1.5rem;line-height:1.2}
+h2{font-size:1.22rem;line-height:1.25}
+h3{font-size:1.02rem}
+p{margin:0 0 .7em}
+a{color:var(--hydro);text-underline-offset:2px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--hydro-2);outline-offset:2px;border-radius:3px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+
+/* ---------- shell ---------- */
+#app{display:flex;flex-direction:column;height:100%}
+#pinbar{flex:0 0 auto}
+#shell{flex:1 1 auto;display:flex;min-height:0}
+#rail{
+  flex:0 0 var(--rail);width:var(--rail);background:var(--surface);
+  border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;
+}
+#brand{padding:16px 16px 12px;border-bottom:1px solid var(--line)}
+#brand .wordmark{display:flex;align-items:center;gap:9px}
+#brand .mk{width:26px;height:26px;flex:0 0 26px}
+#brand b{font-family:"IBM Plex Sans Condensed",sans-serif;font-size:1.12rem;letter-spacing:.005em;font-weight:700}
+#brand .sub{font-size:.74rem;color:var(--ink-3);margin-top:3px;letter-spacing:.02em}
+#nav{flex:1 1 auto;overflow-y:auto;padding:8px}
+.navbtn{
+  display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;margin:1px 0;
+  background:none;border:0;border-radius:var(--radius-s);cursor:pointer;text-align:left;
+  color:var(--ink-2);font-size:.92rem;
+}
+.navbtn:hover{background:var(--surface-2);color:var(--ink)}
+.navbtn[aria-current="page"]{background:var(--surface-2);color:var(--ink);font-weight:600;box-shadow:inset 2px 0 0 var(--hydro)}
+.navbtn svg{width:17px;height:17px;flex:0 0 17px;opacity:.9}
+.navbtn .count{margin-left:auto;font-size:.72rem;padding:1px 6px;border-radius:20px;background:var(--hydro);color:#fff;font-family:"IBM Plex Mono",monospace}
+.navbtn .count.hot{background:var(--signal)}
+#fwlink{display:flex;align-items:center;gap:9px;margin:8px 10px 0;padding:9px 10px;
+  border:1px solid var(--line);border-radius:var(--radius-s);text-decoration:none;
+  color:var(--ink-2);font-size:.78rem;line-height:1.25}
+#fwlink:hover{border-color:var(--hydro);color:var(--ink)}
+#fwlink b{color:var(--ink);font-weight:600}
+.fwsub{color:var(--ink-3);font-size:.7rem}
+.fwdot{width:8px;height:8px;border-radius:50%;background:var(--hydro);flex:0 0 auto}
+#railfoot{border-top:1px solid var(--line);padding:10px 12px;display:flex;align-items:center;gap:8px}
+#railfoot .who{min-width:0;flex:1}
+#railfoot .who .n{font-size:.84rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#railfoot .who .r{font-size:.72rem;color:var(--ink-3)}
+.avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;background:var(--surface-2);flex:0 0 26px}
+#main{flex:1 1 auto;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+#tabbar{display:none}
+
+@media (max-width:860px){
+  #rail{display:none}
+  #tabbar{
+    display:flex;flex:0 0 auto;border-top:1px solid var(--line);background:var(--surface);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  #tabbar button{flex:1;background:none;border:0;padding:7px 2px 6px;color:var(--ink-3);font-size:.63rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+  #tabbar button[aria-current="page"]{color:var(--hydro)}
+  #tabbar svg{width:19px;height:19px}
+  #tabbar .dot{position:absolute;top:5px;right:calc(50% - 16px);width:7px;height:7px;border-radius:50%;background:var(--signal)}
+  #app{padding-bottom:0}
+}
+
+/* ---------- generic ---------- */
+.view{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;scroll-padding-top:env(safe-area-inset-top,0px)}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 18px 40px}
+.viewhead{padding:18px 18px 0;max-width:1040px;margin:0 auto}
+.viewhead .lede{color:var(--ink-2);max-width:62ch;font-size:.93rem}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.panel + .panel{margin-top:14px}
+.pad{padding:16px}
+.rowlist > *{border-top:1px solid var(--line)}
+.rowlist > *:first-child{border-top:0}
+.sec{margin-top:26px}
+.sec > h2{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.sec > h2 .hint{font-size:.78rem;color:var(--ink-3);font-weight:400;font-family:"IBM Plex Sans",sans-serif}
+.btn{
+  display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:var(--radius-s);
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;font-size:.88rem;font-weight:500;
+}
+.btn:hover{background:var(--surface-2)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--hydro);border-color:var(--hydro);color:#fff}
+.btn.primary:hover{background:var(--hydro-2);border-color:var(--hydro-2)}
+.btn.danger{background:var(--signal);border-color:var(--signal);color:#fff}
+.btn.danger:hover{background:var(--signal-2);border-color:var(--signal-2)}
+.btn.ghost{border-color:transparent;background:none}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.sm{padding:4px 9px;font-size:.8rem}
+.btn svg{width:15px;height:15px}
+input[type=text],input[type=tel],input[type=number],input[type=password],input[type=search],select,textarea{
+  width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-s);
+  background:var(--surface);color:var(--ink);
+}
+textarea{resize:vertical;min-height:72px;font-family:inherit}
+label.fld{display:block;margin-bottom:12px}
+label.fld > span{display:block;font-size:.8rem;color:var(--ink-2);margin-bottom:4px;font-weight:500}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+@media (max-width:620px){.grid2{grid-template-columns:1fr}}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:.73rem;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--ink-2);background:var(--surface-2);white-space:nowrap}
+.tag.hot{border-color:var(--signal);color:var(--signal);background:transparent}
+.tag.warn{border-color:var(--amber);color:var(--amber);background:transparent}
+.tag.ok{border-color:var(--grass);color:var(--grass);background:transparent}
+.empty{padding:28px 16px;text-align:center;color:var(--ink-3);font-size:.9rem}
+.empty b{display:block;color:var(--ink-2);font-weight:600;margin-bottom:3px}
+.muted{color:var(--ink-3)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+hr.rule{border:0;border-top:1px solid var(--line);margin:16px 0}
+
+/* ---------- pinned SOS bar + announcement ---------- */
+#pinbar > *{border-bottom:1px solid rgba(0,0,0,.14)}
+.pin{
+  display:flex;align-items:center;gap:12px;padding:9px 14px;
+  padding-top:calc(9px + env(safe-area-inset-top,0px));
+  background:var(--signal);color:#fff;font-size:.9rem;
+}
+.pin .pulse{width:9px;height:9px;border-radius:50%;background:#fff;flex:0 0 9px;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.72)}}
+.pin .txt{flex:1;min-width:0}
+.pin .txt b{font-weight:600}
+.pin .txt .meta{font-size:.76rem;opacity:.85}
+.pin .acts{display:flex;gap:6px;flex-shrink:0}
+.pin .acts button{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;padding:4px 10px;border-radius:var(--radius-s);cursor:pointer;font-size:.8rem;font-weight:500;white-space:nowrap}
+.pin .acts button:hover{background:rgba(255,255,255,.28)}
+.pin .more{font-size:.76rem;opacity:.85;white-space:nowrap}
+.ann{
+  display:flex;gap:10px;align-items:flex-start;padding:9px 14px;background:var(--board);color:var(--board-ink);font-size:.88rem;
+}
+.ann .from{font-size:.72rem;color:var(--hydro-2);font-weight:600;display:block}
+@media (max-width:640px){
+  .pin{flex-wrap:wrap;gap:8px}
+  .pin .acts{width:100%}
+  .pin .acts button{flex:1}
+}
+
+/* ---------- gauge board (dashboard hero) ---------- */
+.board{background:var(--board);border-radius:var(--radius);padding:16px 14px 10px;color:var(--board-ink);overflow:hidden}
+.board .bhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;padding:0 4px}
+.board .bhead h2{color:#fff;font-size:1.06rem}
+.board .bhead .when{font-size:.74rem;color:#7FA5AF;font-family:"IBM Plex Mono",monospace}
+.gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px;background:var(--board-line)}
+.gauge{background:var(--board);padding:12px;position:relative}
+.gauge .nm{font-size:.78rem;color:#8FB4BE;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gauge .val{font-family:"IBM Plex Mono",monospace;font-size:1.72rem;font-weight:500;line-height:1;color:#fff;display:flex;align-items:baseline;gap:4px}
+.gauge .val small{font-size:.72rem;color:#7FA5AF;font-weight:400}
+.gauge .trend{font-size:.74rem;margin-top:3px;font-family:"IBM Plex Mono",monospace}
+.gauge .bar{margin-top:10px;height:5px;background:#16313C;border-radius:3px;position:relative;overflow:hidden}
+.gauge .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;display:block}
+.gauge .danger{position:absolute;top:-3px;bottom:-3px;width:2px;background:#F05A3E}
+.gauge .lv{font-size:.7rem;color:#6E96A1;margin-top:5px;font-family:"IBM Plex Mono",monospace}
+.g-normal i{background:#2FA3B8} .g-watch i{background:#D8A75A} .g-warning i{background:#E08A3C} .g-danger i{background:#F05A3E}
+
+.statusstrip{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.stat{flex:1 1 130px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:11px 13px}
+.stat .k{font-size:.76rem;color:var(--ink-3)}
+.stat .v{font-family:"IBM Plex Mono",monospace;font-size:1.4rem;font-weight:500;line-height:1.15;margin-top:2px}
+.stat.alarm .v{color:var(--signal)}
+.stat .s{font-size:.74rem;color:var(--ink-3)}
+
+.levelbanner{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--radius);border:1px solid;margin-bottom:14px}
+.levelbanner .dial{width:44px;height:44px;flex:0 0 44px}
+.levelbanner h2{font-size:1.12rem}
+.levelbanner p{margin:0;font-size:.86rem;opacity:.9}
+.lb-normal{border-color:var(--grass);background:color-mix(in srgb,var(--grass) 9%,transparent);color:var(--ink)}
+.lb-watch{border-color:var(--silt);background:color-mix(in srgb,var(--silt) 12%,transparent);color:var(--ink)}
+.lb-warning{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 13%,transparent);color:var(--ink)}
+.lb-evacuate{border-color:var(--signal);background:color-mix(in srgb,var(--signal) 13%,transparent);color:var(--ink)}
+
+/* ---------- map ---------- */
+.mapwrap{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.mapwrap svg{display:block;width:100%;height:auto;touch-action:pan-y}
+.zone{cursor:pointer;transition:opacity .12s}
+.zone:hover{opacity:.82}
+.zlabel{font-size:9px;font-family:"IBM Plex Sans Condensed",sans-serif;fill:var(--ink);pointer-events:none;letter-spacing:.02em}
+.riverline{fill:none;stroke:var(--hydro);stroke-linecap:round}
+.maplegend{display:flex;flex-wrap:wrap;gap:12px;padding:10px 14px;border-top:1px solid var(--line);font-size:.76rem;color:var(--ink-2)}
+.maplegend span{display:inline-flex;align-items:center;gap:6px}
+.swatch{width:11px;height:11px;border-radius:3px;display:inline-block}
+.mapinfo{padding:12px 14px;border-top:1px solid var(--line);font-size:.88rem}
+
+/* ---------- chat ---------- */
+#chatview{display:flex;flex:1 1 auto;height:100%;min-height:0}
+#chanlist{flex:0 0 212px;border-right:1px solid var(--line);background:var(--surface);overflow-y:auto;min-height:0}
+#chanlist .grp{font-size:.72rem;color:var(--ink-3);padding:12px 12px 4px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+#chanlist .grp button{background:none;border:0;color:var(--ink-3);cursor:pointer;font-size:1.05rem;line-height:1;padding:0 2px}
+.chan{display:flex;align-items:center;gap:8px;width:100%;padding:7px 12px;background:none;border:0;cursor:pointer;text-align:left;color:var(--ink-2);font-size:.9rem}
+.chan:hover{background:var(--surface-2)}
+.chan[aria-current="true"]{background:var(--surface-2);color:var(--ink);font-weight:600;box-shadow:inset 2px 0 0 var(--hydro)}
+.chan .hash{color:var(--ink-3);font-family:"IBM Plex Mono",monospace}
+.chan .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chan .n{font-size:.7rem;background:var(--signal);color:#fff;border-radius:20px;padding:0 6px;font-family:"IBM Plex Mono",monospace}
+.presencedot{width:7px;height:7px;border-radius:50%;background:var(--grass);flex:0 0 7px}
+.presencedot.off{background:var(--line)}
+#chatmain{flex:1 1 auto;display:flex;flex-direction:column;min-width:0;min-height:0}
+#chathead{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface);flex:0 0 auto}
+#chathead .t{flex:1;min-width:0}
+#chathead h3{font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#chathead .sub{font-size:.75rem;color:var(--ink-3)}
+#msgs{flex:1 1 auto;overflow-y:auto;padding:14px 14px 6px;min-height:0}
+.msg{display:flex;gap:9px;padding:3px 0;position:relative}
+.msg .av{width:30px;flex:0 0 30px}
+.msg .av img{width:30px;height:30px;border-radius:50%;background:var(--surface-2)}
+.msg .bd{flex:1;min-width:0}
+.msg .hd{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+.msg .hd b{font-size:.88rem;font-weight:600}
+.msg .hd .ts{font-size:.7rem;color:var(--ink-3);font-family:"IBM Plex Mono",monospace}
+.msg .hd .role{font-size:.66rem;padding:0 5px;border-radius:3px;background:var(--hydro);color:#fff}
+.msg .tx{font-size:.93rem;word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap}
+.msg.cont{padding-top:0}
+.msg.cont .av{visibility:hidden;height:0}
+.msg:hover .tools{opacity:1}
+.tools{position:absolute;right:0;top:-8px;display:flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-s);padding:2px;opacity:0;transition:opacity .1s;box-shadow:var(--shadow)}
+.tools button{background:none;border:0;cursor:pointer;padding:3px 5px;border-radius:4px;font-size:.85rem;line-height:1;color:var(--ink-2)}
+.tools button:hover{background:var(--surface-2)}
+@media (hover:none){.tools{opacity:1;position:static;border:0;box-shadow:none;background:none;padding:0;margin-top:2px}}
+.replyq{border-left:2px solid var(--hydro);padding:1px 0 1px 8px;margin-bottom:3px;font-size:.78rem;color:var(--ink-3)}
+.replyq b{color:var(--ink-2)}
+.reacts{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.react{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface-2);border-radius:20px;padding:0 7px;font-size:.78rem;cursor:pointer;line-height:1.6}
+.react.mine{border-color:var(--hydro);background:color-mix(in srgb,var(--hydro) 14%,transparent)}
+.daysep{display:flex;align-items:center;gap:10px;margin:14px 0 8px;color:var(--ink-3);font-size:.74rem}
+.daysep::before,.daysep::after{content:"";flex:1;height:1px;background:var(--line)}
+.sysmsg{text-align:center;font-size:.76rem;color:var(--ink-3);padding:5px 0}
+.linkcard{display:block;border:1px solid var(--line);border-left:3px solid var(--hydro);border-radius:var(--radius-s);padding:7px 10px;margin-top:6px;max-width:420px;text-decoration:none;background:var(--surface-2)}
+.linkcard .host{font-size:.74rem;color:var(--hydro);font-weight:600}
+.linkcard .path{font-size:.8rem;color:var(--ink-2);word-break:break-all}
+.voice{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:20px;padding:5px 12px 5px 6px;margin-top:5px;max-width:300px;background:var(--surface-2)}
+.voice button{width:28px;height:28px;border-radius:50%;border:0;background:var(--hydro);color:#fff;cursor:pointer;flex:0 0 28px;display:flex;align-items:center;justify-content:center}
+.voice .wave{flex:1;display:flex;align-items:center;gap:2px;height:20px}
+.voice .wave i{flex:1;background:var(--hydro);opacity:.45;border-radius:1px;min-width:2px}
+.voice .dur{font-family:"IBM Plex Mono",monospace;font-size:.76rem;color:var(--ink-3)}
+
+.sos{border:1px solid var(--signal);border-left:4px solid var(--signal);border-radius:var(--radius);background:color-mix(in srgb,var(--signal) 7%,var(--surface));padding:11px 13px;margin:8px 0;max-width:560px}
+.sos.resolved{border-color:var(--line);border-left-color:var(--ink-3);background:var(--surface-2);opacity:.72}
+.sos.resolved .sostitle{color:var(--ink-3)}
+.sostitle{display:flex;align-items:center;gap:8px;font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:700;font-size:1rem;color:var(--signal)}
+.sos .note{font-size:.92rem;margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.sos .facts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sos .acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.sos .resp{font-size:.79rem;color:var(--ink-2);margin-top:7px}
+.livedot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--signal);animation:pulse 1.6s infinite}
+#composer{flex:0 0 auto;border-top:1px solid var(--line);background:var(--surface);padding:9px 12px;padding-bottom:calc(9px + env(safe-area-inset-bottom,0px))}
+#replybar{display:none;align-items:center;gap:8px;font-size:.78rem;color:var(--ink-3);padding:0 2px 6px}
+#replybar.on{display:flex}
+#typing{height:16px;font-size:.74rem;color:var(--ink-3);padding:0 2px 2px}
+.cbox{display:flex;align-items:flex-end;gap:7px}
+.cbox textarea{flex:1;min-height:38px;max-height:132px;border-radius:19px;padding:8px 14px;resize:none;line-height:1.4}
+.iconbtn{width:38px;height:38px;flex:0 0 38px;border-radius:50%;border:1px solid var(--line);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink-2)}
+.iconbtn:hover{background:var(--surface-2);color:var(--ink)}
+.iconbtn svg{width:17px;height:17px}
+.iconbtn.rec{background:var(--signal);border-color:var(--signal);color:#fff;animation:pulse 1.4s infinite}
+.iconbtn.sos{background:var(--signal);border-color:var(--signal);color:#fff}
+.iconbtn.sos:hover{background:var(--signal-2)}
+.iconbtn.send{background:var(--hydro);border-color:var(--hydro);color:#fff}
+@media (max-width:860px){
+  #chanlist{position:absolute;inset:0 auto 0 0;z-index:20;width:80%;max-width:272px;transform:translateX(-102%);transition:transform .18s;box-shadow:var(--shadow)}
+  #chanlist.open{transform:none}
+  #chatview{position:relative}
+}
+
+/* ---------- list rows ---------- */
+.row{display:flex;gap:12px;padding:13px 16px;align-items:flex-start}
+.row .grow{flex:1;min-width:0}
+.row h3{font-size:.97rem;margin-bottom:2px}
+.row .meta{font-size:.79rem;color:var(--ink-3)}
+.row .side{flex:0 0 auto;text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.capbar{height:5px;background:var(--surface-2);border-radius:3px;overflow:hidden;margin-top:7px;max-width:260px}
+.capbar i{display:block;height:100%;background:var(--hydro)}
+.capbar.full i{background:var(--signal)}
+.alertrow{border-left:3px solid var(--line);padding-left:13px}
+.alertrow.l-advisory{border-left-color:var(--hydro)}
+.alertrow.l-watch{border-left-color:var(--silt)}
+.alertrow.l-warning{border-left-color:var(--amber)}
+.alertrow.l-evacuate{border-left-color:var(--signal)}
+.chip{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:4px;color:#fff}
+.c-advisory{background:var(--hydro)} .c-watch{background:var(--silt)} .c-warning{background:var(--amber)} .c-evacuate{background:var(--signal)}
+.c-open{background:var(--grass)} .c-ack{background:var(--silt)} .c-closed{background:var(--ink-3)}
+.check{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line);cursor:pointer}
+.check:first-of-type{border-top:0}
+.check input{margin-top:4px;flex:0 0 auto;accent-color:var(--hydro);width:16px;height:16px}
+.check.done .lbl{text-decoration:line-through;color:var(--ink-3)}
+.prose{max-width:66ch}
+.prose h3{margin:20px 0 6px}
+.prose ul{margin:0 0 10px;padding-left:19px}
+.prose li{margin-bottom:4px}
+
+/* ---------- modal / lobby / toast ---------- */
+.scrim{position:fixed;inset:0;background:rgba(6,18,24,.55);display:flex;align-items:center;justify-content:center;padding:18px;z-index:60;backdrop-filter:blur(2px)}
+.modal{background:var(--surface);border-radius:var(--radius);border:1px solid var(--line);max-width:460px;width:100%;max-height:86vh;overflow-y:auto;box-shadow:0 24px 60px -24px rgba(0,0,0,.6)}
+.modal .mh{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.modal .mh h2{flex:1;font-size:1.06rem}
+.modal .mb{padding:16px}
+.modal .mf{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+#lobby{position:fixed;inset:0;z-index:80;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+#lobby .card{max-width:420px;width:100%;text-align:center}
+#lobby .mk{width:52px;height:52px;margin:0 auto 14px}
+#lobby h1{margin-bottom:6px}
+#lobby p{color:var(--ink-2);font-size:.92rem}
+#lobby input{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:1.3rem;letter-spacing:.32em;padding:11px}
+#toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(22px + env(safe-area-inset-bottom,0px));z-index:90;display:flex;flex-direction:column;gap:7px;align-items:center;pointer-events:none;width:calc(100% - 32px);max-width:420px}
+.toast{background:var(--board);color:#fff;padding:9px 15px;border-radius:22px;font-size:.86rem;box-shadow:var(--shadow);animation:rise .18s ease-out}
+.toast.bad{background:var(--signal)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#qrbox{display:flex;justify-content:center;padding:14px;background:#fff;border-radius:var(--radius);border:1px solid var(--line)}
+#qrbox img,#qrbox canvas{display:block;max-width:100%;height:auto}
+.emojibar{display:flex;gap:3px;flex-wrap:wrap}
+.emojibar button{font-size:1.05rem;background:none;border:1px solid transparent;border-radius:5px;cursor:pointer;padding:3px 5px;line-height:1}
+.emojibar button:hover{background:var(--surface-2);border-color:var(--line)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:.87rem}
+.kv dt{color:var(--ink-3)}
+.kv dd{margin:0}
+.banner{padding:11px 14px;border-radius:var(--radius);border:1px dashed var(--line);font-size:.85rem;color:var(--ink-2);background:var(--surface-2)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius-s);overflow:hidden}
+.seg button{background:var(--surface);border:0;padding:5px 11px;cursor:pointer;font-size:.83rem;color:var(--ink-2);border-left:1px solid var(--line)}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--hydro);color:#fff}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="pinbar"></div>
+  <div id="shell">
+    <aside id="rail">
+      <div id="brand">
+        <div class="wordmark">
+          <svg class="mk" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="none" stroke="var(--hydro)" stroke-width="1.5"/><path d="M2 19c3.4 0 3.4-3.6 6.8-3.6S12.2 19 15.6 19s3.4-3.6 6.8-3.6S25.8 19 29.2 19" fill="none" stroke="var(--hydro)" stroke-width="1.8" stroke-linecap="round"/><path d="M16 4.5v7M16 14.5v.2" stroke="var(--signal)" stroke-width="2.4" stroke-linecap="round"/></svg>
+          <b>MeridianSOS</b>
+        </div>
+        <div class="sub">Meridian city flood response</div>
+      </div>
+      <nav id="nav"></nav>
+      <a id="fwlink" href="#" target="_blank" rel="noopener"
+         title="The forecast this control room is acting on">
+        <span class="fwdot"></span>
+        <span><b>Flood Watch</b><br><span class="fwsub">forecast &amp; routing</span></span>
+      </a>
+      <div id="railfoot">
+        <img class="avatar" id="meav" alt="">
+        <div class="who"><div class="n" id="mename">—</div><div class="r" id="merole"></div></div>
+        <button class="btn ghost sm" id="themebtn" title="Switch theme" aria-label="Switch theme">◐</button>
+      </div>
+    </aside>
+    <main id="main"><div class="view" id="view"></div></main>
+  </div>
+  <nav id="tabbar"></nav>
+</div>
+<div id="toasts"></div>
+<div id="modalroot"></div>
+<div id="lobbyroot"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+
+/* ============================================================
+   Local server data layer — same shape as the claude.ai
+   db / room / user capabilities, backed by this app's own
+   server.js over fetch + Server-Sent Events. Everything below
+   this block (chat, SOS, alerts, admin, etc.) is unchanged.
+   ============================================================ */
+function genId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID().replace(/-/g, "").slice(0, 20);
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+}
+function avatarFor(id, name, color) {
+  const initial = ((name || "?").trim().charAt(0) || "?").toUpperCase();
+  const c = color || "#5b8a99";
+  const s = "<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='64' height='64' rx='32' fill='" + c + "'/>" +
+    "<text x='32' y='43' font-family='sans-serif' font-size='27' fill='white' text-anchor='middle'>" + initial.replace(/[&<>]/g, "") + "</text></svg>";
+  return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(s)));
+}
+const PALETTE = ["#3F7A4B", "#15697A", "#A9803F", "#7A4B6E", "#4B5E7A", "#7A5A3F", "#4B7A6E", "#7A3F55"];
+
+/* ---- shared SSE stream, fanned out to db/room subscribers ---- */
+class Stream {
+  /* Long-polling transport. Vercel serverless cannot hold an SSE connection
+     with a shared in-process client set, so the server exposes
+     GET /api/poll?since=<rev> instead: it blocks until the state revision
+     moves (or ~20 s), then returns the whole state. This class diffs
+     successive snapshots so everything downstream still receives per-document
+     deltas exactly as it did over SSE. */
+  constructor(deviceId) {
+    this.deviceId = deviceId;
+    this.docHandlers = new Set();
+    this.presenceHandlers = new Set();
+    this.roomHandlers = new Set();
+    this.rev = 0;
+    this.storage = null;
+    this.online = false;
+    this._last = {};
+    this._seenEvents = new Set();
+    this._stopped = false;
+    this._loop();
+  }
+  stop() { this._stopped = true; }
+  async _loop() {
+    let backoff = 1000;
+    while (!this._stopped) {
+      try {
+        const r = await fetch("/api/poll?since=" + this.rev
+          + "&id=" + encodeURIComponent(this.deviceId), { cache: "no-store" });
+        if (!r.ok) throw new Error("poll " + r.status);
+        const m = await r.json();
+        const first = this.rev === 0;
+        this.storage = m.storage;
+        this.online = true;
+        backoff = 1000;
+        if (m.changed || first) this._apply(m, first);
+        this.rev = m.rev || 0;
+        if (typeof window.onMeridianStatus === "function")
+          window.onMeridianStatus({ online: true, storage: m.storage, rev: this.rev });
+      } catch (e) {
+        this.online = false;
+        if (typeof window.onMeridianStatus === "function")
+          window.onMeridianStatus({ online: false, storage: this.storage, rev: this.rev });
+        await new Promise(s => setTimeout(s, backoff));
+        backoff = Math.min(backoff * 2, 15000);
+      }
+    }
+  }
+  _apply(m, first) {
+    const store = m.store || {};
+    /* changed or newly created documents */
+    for (const k of Object.keys(store)) {
+      if (k.startsWith("events/")) continue;
+      const a = this._last[k], b = store[k];
+      if (JSON.stringify(a) !== JSON.stringify(b))
+        this.docHandlers.forEach(h => h(k, true, b));
+    }
+    /* deletions */
+    for (const k of Object.keys(this._last)) {
+      if (k.startsWith("events/") || (k in store)) continue;
+      this.docHandlers.forEach(h => h(k, false, null));
+    }
+    /* transient room events: never replay history on the first poll */
+    for (const k of Object.keys(store)) {
+      if (!k.startsWith("events/") || this._seenEvents.has(k)) continue;
+      this._seenEvents.add(k);
+      if (first) continue;
+      const e = store[k] || {};
+      this.roomHandlers.forEach(h => h(e.topic, e.data, e.from));
+    }
+    this._last = JSON.parse(JSON.stringify(store));
+    this.presenceHandlers.forEach(h => h(m.peers || []));
+  }
+}
+
+class LocalDB {
+  constructor(stream, deviceId) {
+    this.stream = stream; this.deviceId = deviceId;
+    this.cache = {}; this.exists = {};
+    this.docSubs = {}; this.colSubs = [];
+    stream.docHandlers.add((path, exists, data) => this._applyDoc(path, exists, data));
+  }
+  _hdrs(json) { const h = { "X-Device-Id": this.deviceId }; if (json) h["Content-Type"] = "application/json"; return h; }
+  _applyDoc(path, exists, data) {
+    this.exists[path] = exists; this.cache[path] = data;
+    (this.docSubs[path] || new Set()).forEach(cb => cb({ exists, data: () => data }));
+    this.colSubs.forEach(cs => { if (path.startsWith(cs.prefix)) this._emitCol(cs); });
+  }
+  _emitCol(cs) {
+    let rows = Object.keys(this.cache).filter(p => p.startsWith(cs.prefix) && this.exists[p] && p.slice(cs.prefix.length).indexOf("/") === -1)
+      .map(p => ({ id: p.slice(cs.prefix.length), _d: this.cache[p] }));
+    if (cs.orderField) rows.sort((a, b) => { const av = a._d[cs.orderField], bv = b._d[cs.orderField]; const c = av > bv ? 1 : av < bv ? -1 : 0; return cs.dir === "desc" ? -c : c; });
+    if (cs.limitN) rows = rows.slice(0, cs.limitN);
+    cs.next({ docs: rows.map(r => ({ id: r.id, data: () => r._d })) });
+  }
+  async _fetchDoc(path) {
+    try {
+      const r = await fetch("/api/doc?path=" + encodeURIComponent(path), { headers: this._hdrs() });
+      const j = await r.json();
+      this.exists[path] = !!j.exists; this.cache[path] = j.data;
+    } catch (e) { this.exists[path] = this.exists[path] || false; }
+  }
+  doc(path) {
+    const self = this;
+    return {
+      async get() { if (!(path in self.exists)) await self._fetchDoc(path); return { exists: !!self.exists[path], data: () => self.cache[path] }; },
+      async set(data) {
+        const r = await fetch("/api/doc", { method: "POST", headers: self._hdrs(true), body: JSON.stringify({ path, data, merge: false }) });
+        if (!r.ok) { const j = await r.json().catch(() => ({})); throw { code: j.code || "invalid_argument", message: j.message || "write failed" }; }
+      },
+      async update(data) {
+        const r = await fetch("/api/doc", { method: "POST", headers: self._hdrs(true), body: JSON.stringify({ path, data, merge: true }) });
+        if (!r.ok) { const j = await r.json().catch(() => ({})); throw { code: j.code || "invalid_argument", message: j.message || "write failed" }; }
+      },
+      async delete() {
+        const r = await fetch("/api/doc?path=" + encodeURIComponent(path), { method: "DELETE", headers: self._hdrs() });
+        if (!r.ok) throw { code: "invalid_argument", message: "delete failed" };
+      },
+      onSnapshot(next, err) {
+        if (!self.docSubs[path]) self.docSubs[path] = new Set();
+        self.docSubs[path].add(next);
+        self._fetchDoc(path).then(() => next({ exists: !!self.exists[path], data: () => self.cache[path] })).catch(e => { if (err) err({ code: "unavailable", message: String(e) }); });
+        return () => { self.docSubs[path] && self.docSubs[path].delete(next); };
+      }
+    };
+  }
+  collection(path) {
+    const self = this, prefix = path + "/";
+    const builder = (orderField, dir, limitN) => ({
+      orderBy(f, d) { return builder(f, d || "asc", limitN); },
+      limit(n) { return builder(orderField, dir, n); },
+      async get() {
+        const r = await fetch("/api/collection?path=" + encodeURIComponent(path), { headers: self._hdrs() });
+        let rows = await r.json().catch(() => []);
+        rows.forEach(row => { self.exists[prefix + row.id] = true; self.cache[prefix + row.id] = row; });
+        if (orderField) rows.sort((a, b) => { const av = a[orderField], bv = b[orderField]; const c = av > bv ? 1 : av < bv ? -1 : 0; return dir === "desc" ? -c : c; });
+        if (limitN) rows = rows.slice(0, limitN);
+        return { docs: rows.map(r2 => ({ id: r2.id, data: () => r2 })) };
+      },
+      onSnapshot(next, err) {
+        const cs = { prefix, orderField, dir, limitN, next };
+        self.colSubs.push(cs);
+        fetch("/api/collection?path=" + encodeURIComponent(path), { headers: self._hdrs() }).then(r => r.json()).then(rows => {
+          rows.forEach(row => { self.exists[prefix + row.id] = true; self.cache[prefix + row.id] = row; });
+          self._emitCol(cs);
+        }).catch(e => { if (err) err({ code: "unavailable", message: String(e) }); });
+        return () => { const i = self.colSubs.indexOf(cs); if (i >= 0) self.colSubs.splice(i, 1); };
+      },
+      doc(id) { return self.doc(prefix + (id || genId())); },
+      async add(data) { const id = genId(); await self.doc(prefix + id).set(data); return self.doc(prefix + id); }
+    });
+    return builder(null, null, null);
+  }
+}
+
+class LocalRoom {
+  constructor(stream, deviceId) {
+    this.stream = stream; this.deviceId = deviceId;
+    this.peerMap = {}; this.peerHandlers = new Set(); this.topicHandlers = {};
+    stream.presenceHandlers.add(list => this._onPresence(list));
+    stream.roomHandlers.add((topic, data, from) => this._onEvent(topic, data, from));
+  }
+  _onPresence(list) {
+    this.peerMap = {}; list.forEach(p => { this.peerMap[p.id] = p; });
+    const arr = list.map(p => ({ peer: p.id, by: p.id, isMe: p.id === this.deviceId, sameTab: p.id === this.deviceId, kind: "viewer", presence: p.presence || {}, updatedAt: p.updatedAt || Date.now() }));
+    this.peerHandlers.forEach(h => h({ peers: arr, joined: [], left: [], updated: arr }));
+  }
+  _onEvent(topic, data, from) {
+    (this.topicHandlers[topic] || new Set()).forEach(h => h({ topic, data, peer: from, by: from, isMe: from === this.deviceId, sameTab: from === this.deviceId, kind: "viewer" }));
+  }
+  async presence(patch) { try { await fetch("/api/presence", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: this.deviceId, patch }) }); } catch (e) { } }
+  onPeers(handler) { this.peerHandlers.add(handler); return () => this.peerHandlers.delete(handler); }
+  async emit(topic, data) { try { await fetch("/api/emit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: this.deviceId, topic, data }) }); } catch (e) { } }
+  on(topic, handler) { if (!this.topicHandlers[topic]) this.topicHandlers[topic] = new Set(); this.topicHandlers[topic].add(handler); return () => this.topicHandlers[topic].delete(handler); }
+}
+
+class LocalUser {
+  constructor(deviceId, meRef) { this.deviceId = deviceId; this.meRef = meRef; this.cache = {}; }
+  async me() { return { id: this.deviceId, name: this.meRef.name || "", avatarUrl: avatarFor(this.deviceId, this.meRef.name, this.meRef.color), color: this.meRef.color, email: null, isOwner: false, canEdit: !!S.isAdmin }; }
+  async id() { return this.deviceId; }
+  async isOwner() { return false; }
+  async canEdit() { return !!S.isAdmin; }
+  async can(name) { if (name === "data.write") return true; return !!S.isAdmin; }
+  async name() { return this.meRef.name || ""; }
+  async avatarUrl() { return avatarFor(this.deviceId, this.meRef.name, this.meRef.color); }
+  async profiles(ids) {
+    const list = Array.from(new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean)));
+    const need = list.filter(i => !(i in this.cache));
+    if (need.length) {
+      let r = {};
+      try { r = await fetch("/api/people?ids=" + encodeURIComponent(need.join(","))).then(x => x.json()); } catch (e) { }
+      need.forEach(i => {
+        const p = r[i];
+        this.cache[i] = p ? { id: i, name: p.name || "", avatarUrl: avatarFor(i, p.name, p.color), color: p.color || "#888", email: null, isMe: i === this.deviceId }
+          : { id: i, name: "", avatarUrl: avatarFor(i, "", "#888"), color: "#888", email: null, isMe: i === this.deviceId };
+      });
+    }
+    const out = {}; list.forEach(i => out[i] = this.cache[i]); return out;
+  }
+  async search(q) {
+    let rows = [];
+    try { rows = await fetch("/api/people/search?q=" + encodeURIComponent(q)).then(r => r.json()); } catch (e) { }
+    return rows.map(p => ({ id: p.id, name: p.name || "", avatarUrl: avatarFor(p.id, p.name, p.color), color: p.color || "#888", email: null, isMe: p.id === this.deviceId }));
+  }
+}
+
+/* ---- local identity: device id + display name, kept in localStorage ---- */
+function loadDevice() {
+  let d = LS.get("device", null);
+  if (!d || !d.id) { d = { id: genId(), name: "", color: PALETTE[Math.floor(Math.random() * PALETTE.length)] }; LS.set("device", d); }
+  return d;
+}
+function saveDevice(d) { LS.set("device", d); }
+async function registerIdentity(d) {
+  try { await fetch("/api/identity", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: d.id, name: d.name, color: d.color }) }); } catch (e) { }
+}
+function askName() {
+  return new Promise(resolve => {
+    const root = $("#lobbyroot");
+    root.innerHTML = "";
+    const input = el("input", { type: "text", maxlength: "40", placeholder: "Your name", "aria-label": "Your name", style: "text-align:center;font-family:inherit;letter-spacing:normal;font-size:1.05rem" });
+    const go = () => { const v = input.value.trim(); if (!v) { input.focus(); return; } root.innerHTML = ""; resolve(v); };
+    input.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
+    root.appendChild(el("div", { id: "lobby" }, [
+      el("div", { class: "card" }, [
+        el("div", { class: "mk", html: '<svg viewBox="0 0 32 32" style="width:100%;height:100%"><circle cx="16" cy="16" r="15" fill="none" stroke="var(--hydro)" stroke-width="1.5"/><path d="M2 19c3.4 0 3.4-3.6 6.8-3.6S12.2 19 15.6 19s3.4-3.6 6.8-3.6S25.8 19 29.2 19" fill="none" stroke="var(--hydro)" stroke-width="1.8" stroke-linecap="round"/><path d="M16 4.5v7M16 14.5v.2" stroke="var(--signal)" stroke-width="2.4" stroke-linecap="round"/></svg>' }),
+        el("h1", { text: "MeridianSOS" }),
+        el("p", { text: "Running on your local network. What should we call you here?" }),
+        el("div", { style: "margin:18px 0 10px" }, [input]),
+        el("button", { class: "btn primary", text: "Continue", style: "width:100%;justify-content:center", onclick: go })
+      ])
+    ]));
+    setTimeout(() => input.focus(), 50);
+  });
+}
+"use strict";
+/* ============================================================
+   MeridianSOS — flood coordination console
+   Single-file app. Persistence: claude `db`. Live: `room`. Identity: `user`.
+   ============================================================ */
+
+/* ---------- tiny helpers ---------- */
+const $ = (s, r) => (r || document).querySelector(s);
+const el = (tag, attrs, kids) => {
+  const n = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    const v = attrs[k];
+    if (v === null || v === undefined || v === false) continue;
+    if (k === "class") n.className = v;
+    else if (k === "text") n.textContent = v;
+    else if (k === "html") n.innerHTML = v;
+    else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v === true ? "" : v);
+  }
+  if (kids) (Array.isArray(kids) ? kids : [kids]).forEach(c => { if (c) n.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+  return n;
+};
+const svg = (d, extra) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICON = {
+  dash: svg('<path d="M3 13h5l2-7 3 14 2.5-7H21"/>'),
+  map: svg('<path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z"/><path d="M9 4v13M15 6.5v13"/>'),
+  alert: svg('<path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4M12 17.2v.1"/>'),
+  shelter: svg('<path d="M3 11 12 4l9 7"/><path d="M5.5 9.7V20h13V9.7"/><path d="M10 20v-5h4v5"/>'),
+  report: svg('<path d="M5 3h9l5 5v13H5z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>'),
+  chat: svg('<path d="M21 12a8 8 0 0 1-11.7 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/>'),
+  prep: svg('<path d="M9 5H6.5A1.5 1.5 0 0 0 5 6.5v13A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 17.5 5H15"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M8.5 12.5l2 2 4.5-4.5"/>'),
+  settings: svg('<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4 5.3 5.3"/>'),
+  admin: svg('<path d="M12 3 4 6.2v5.3c0 4.8 3.3 8.9 8 10.2 4.7-1.3 8-5.4 8-10.2V6.2L12 3z"/><path d="M9.2 12.2l2 2 3.6-3.9"/>'),
+  send: svg('<path d="M4.5 12 20 4.5 15.5 20 12 13.5 4.5 12z"/>'),
+  mic: svg('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/>'),
+  sos: svg('<path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4M12 17.2v.1"/>'),
+  back: svg('<path d="M15 5l-7 7 7 7"/>'),
+  menu: svg('<path d="M4 7h16M4 12h16M4 17h16"/>'),
+  plus: svg('<path d="M12 5v14M5 12h14"/>'),
+  play: svg('<path d="M7 4.5 19 12 7 19.5z" fill="currentColor" stroke="none"/>'),
+  pause: svg('<path d="M8 4.5h3.2v15H8zM12.8 4.5H16v15h-3.2z" fill="currentColor" stroke="none"/>'),
+  close: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
+};
+const esc = s => String(s == null ? "" : s);
+const nowIso = () => Date.now();
+const pad = n => String(n).padStart(2, "0");
+const fmtTime = ts => { const d = new Date(ts); return pad(d.getHours()) + ":" + pad(d.getMinutes()); };
+const fmtDay = ts => {
+  const d = new Date(ts), t = new Date(), y = new Date(Date.now() - 864e5);
+  if (d.toDateString() === t.toDateString()) return "Today";
+  if (d.toDateString() === y.toDateString()) return "Yesterday";
+  return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+};
+const fmtWhen = ts => {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 45) return "just now";
+  if (s < 3600) return Math.floor(s / 60) + " min ago";
+  if (s < 86400) return Math.floor(s / 3600) + " hr ago";
+  return fmtDay(ts) + " " + fmtTime(ts);
+};
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+function haversine(a, b, c, d) {
+  const R = 6371000, r = Math.PI / 180;
+  const dLat = (c - a) * r, dLon = (d - b) * r;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+const fmtDist = m => m == null ? null : (m < 950 ? "About " + (Math.round(m / 10) * 10) + " m from you" : "About " + (m / 1000).toFixed(m < 10000 ? 1 : 0) + " km from you");
+function toast(msg, bad) {
+  const t = el("div", { class: "toast" + (bad ? " bad" : ""), text: msg });
+  $("#toasts").appendChild(t);
+  setTimeout(() => { t.style.opacity = "0"; t.style.transition = "opacity .25s"; setTimeout(() => t.remove(), 260); }, 3200);
+}
+function confirmish(title, body, okLabel, danger) {
+  return new Promise(res => {
+    const close = v => { root.innerHTML = ""; res(v); };
+    const root = $("#modalroot");
+    root.innerHTML = "";
+    root.appendChild(el("div", { class: "scrim", onclick: e => { if (e.target.classList.contains("scrim")) close(false); } }, [
+      el("div", { class: "modal", role: "dialog", "aria-modal": "true" }, [
+        el("div", { class: "mh" }, [el("h2", { text: title })]),
+        el("div", { class: "mb" }, [el("p", { text: body, style: "margin:0;color:var(--ink-2)" })]),
+        el("div", { class: "mf" }, [
+          el("button", { class: "btn", text: "Cancel", onclick: () => close(false) }),
+          el("button", { class: "btn " + (danger ? "danger" : "primary"), text: okLabel || "Confirm", onclick: () => close(true) })
+        ])
+      ])
+    ]));
+  });
+}
+function openModal(title, buildBody, footerBtns) {
+  const root = $("#modalroot");
+  const close = () => { root.innerHTML = ""; };
+  root.innerHTML = "";
+  const body = el("div", { class: "mb" });
+  const m = el("div", { class: "modal", role: "dialog", "aria-modal": "true" }, [
+    el("div", { class: "mh" }, [el("h2", { text: title }), el("button", { class: "btn ghost sm", html: ICON.close, "aria-label": "Close", onclick: close })]),
+    body
+  ]);
+  buildBody(body, close);
+  if (footerBtns) m.appendChild(el("div", { class: "mf" }, footerBtns(close)));
+  root.appendChild(el("div", { class: "scrim", onclick: e => { if (e.target.classList.contains("scrim")) close(); } }, [m]));
+  return close;
+}
+
+/* ---------- app state ---------- */
+const S = {
+  db: null, room: null, user: null,
+  me: { id: null, name: "", avatarUrl: "", color: "#888" },
+  isAdmin: false, canWrite: null,
+  config: {}, mapcfg: null, gauges: null, baseAdmin:false, focusSOS:null,
+  alerts: [], shelters: [], reports: [], messages: [], members: {}, checkins: [], addresses: [],
+  myAddress: null, rooms: [],
+  view: "dashboard", chan: { type: "room", id: "general" },
+  reply: null, editing: null,
+  peers: [], typing: {},
+  geo: null, geoWatch: null, sosWatch: null, sosDocId: null, sosStop: 0,
+  seen: {}, unlocked: false, notify: false, ready: false,
+  profileCache: {},
+};
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem("meridian." + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem("meridian." + k, JSON.stringify(v)); } catch (e) { } }
+};
+
+/* ---------- defaults (seeded once by an admin) ---------- */
+const DEFAULT_ROOMS = [
+  { id: "general", name: "General", desc: "Everyone in Meridian" },
+  { id: "team-a", name: "Team A", desc: "Field response crew" },
+  { id: "control", name: "Control room", desc: "Coordination and logistics" },
+];
+const DEFAULT_GAUGES = [
+  { id: "g1", name: "Meridian Channel at Old Port", level: 2.4, warn: 3.2, danger: 4.1, prev: 2.1, unit: "m" },
+  { id: "g2", name: "Meridian Channel at Rivergate", level: 1.9, warn: 3.0, danger: 3.8, prev: 1.9, unit: "m" },
+  { id: "g3", name: "Ghost Channel culvert", level: 3.4, warn: 3.3, danger: 4.4, prev: 2.8, unit: "m" },
+  { id: "g4", name: "Rainfall, last 24 h", level: 68, warn: 90, danger: 130, prev: 31, unit: "mm" },
+];
+const DEFAULT_ZONES = [
+  { id: "z1", name: "Katpadi", risk: "watch", pts: "44,26 96,18 118,52 96,86 52,78", lx: 72, ly: 52 },
+  { id: "z2", name: "Gandhi Nagar", risk: "warning", pts: "118,52 168,40 186,78 150,104 96,86", lx: 142, ly: 72 },
+  { id: "z3", name: "Sathuvachari", risk: "normal", pts: "168,40 226,36 242,74 186,78", lx: 206, ly: 58 },
+  { id: "z4", name: "Old Town", risk: "warning", pts: "96,86 150,104 142,146 88,140 60,110", lx: 110, ly: 120 },
+  { id: "z5", name: "Thorapadi", risk: "danger", pts: "150,104 186,78 242,74 250,126 196,150 142,146", lx: 196, ly: 116 },
+  { id: "z6", name: "Bagayam", risk: "normal", pts: "60,110 88,140 78,178 30,166 24,124", lx: 58, ly: 146 },
+  { id: "z7", name: "Ariyur flats", risk: "watch", pts: "142,146 196,150 206,192 132,196 78,178 88,140", lx: 148, ly: 172 },
+];
+const DEFAULT_MAP = { west: 79.06, east: 79.24, south: 12.85, north: 12.99, river: "10,72 56,84 104,96 150,118 196,132 252,140", zones: DEFAULT_ZONES };
+const DEFAULT_SHELTERS = [
+  { id: "s1", name: "Government Higher Sec. School, Katpadi", zone: "Katpadi", capacity: 320, occupancy: 84, status: "open", contact: "Warden desk, gate 2", x: 74, y: 44 },
+  { id: "s2", name: "Community Hall, Gandhi Nagar", zone: "Gandhi Nagar", capacity: 180, occupancy: 172, status: "open", contact: "Ward office", x: 140, y: 66 },
+  { id: "s3", name: "Municipal School, Thorapadi", zone: "Thorapadi", capacity: 250, occupancy: 250, status: "full", contact: "Headmaster's office", x: 200, y: 122 },
+  { id: "s4", name: "Bagayam Marriage Hall", zone: "Bagayam", capacity: 140, occupancy: 12, status: "open", contact: "Caretaker", x: 56, y: 150 },
+];
+const RISK_FILL = { normal: "var(--grass)", watch: "var(--silt)", warning: "var(--amber)", danger: "var(--signal)" };
+const LEVELS = {
+  normal: { t: "Normal", d: "Rivers within banks. Routine monitoring." },
+  watch: { t: "Watch", d: "Levels rising. Keep a go-bag ready and check alerts." },
+  warning: { t: "Warning", d: "Flooding expected in low-lying zones. Move valuables up, avoid the riverbank." },
+  evacuate: { t: "Evacuate", d: "Leave listed zones now and go to the nearest open shelter." },
+};
+
+/* ============================================================
+   Boot
+   ============================================================ */
+/* The flood dashboard is served separately (scripts/run_demo.py starts both).
+   Resolve it against the CURRENT host so the link also works for someone who
+   opened this over WiFi on their phone, not just on the server machine. */
+const FLOOD_WATCH_PORT = 8731;
+(function linkFloodWatch(){
+  const a = document.getElementById("fwlink");
+  if (a) a.href = location.protocol + "//" + location.hostname + ":" + FLOOD_WATCH_PORT + "/";
+})();
+
+const NAV = [
+  { id: "dashboard", label: "Dashboard", icon: "dash" },
+  { id: "map", label: "City map", icon: "map" },
+  { id: "alerts", label: "Alerts", icon: "alert" },
+  { id: "shelters", label: "Shelters", icon: "shelter" },
+  { id: "report", label: "Report", icon: "report" },
+  { id: "chat", label: "Chat & SOS", icon: "chat" },
+  { id: "prepare", label: "Prepare", icon: "prep" },
+  { id: "settings", label: "Settings", icon: "settings" },
+  { id: "admin", label: "Admin", icon: "admin", adminOnly: true },
+];
+
+function applyTheme() {
+  const t = LS.get("theme", "auto");
+  document.documentElement.setAttribute("data-theme", t);
+}
+applyTheme();
+$("#themebtn").addEventListener("click", () => {
+  const order = ["auto", "light", "dark"], t = LS.get("theme", "auto");
+  const next = order[(order.indexOf(t) + 1) % 3];
+  LS.set("theme", next); applyTheme(); toast("Theme: " + next);
+});
+
+function buildNav() {
+  const nav = $("#nav"), tabs = $("#tabbar");
+  nav.innerHTML = ""; tabs.innerHTML = "";
+  const items = NAV.filter(n => !n.adminOnly || S.isAdmin);
+  items.forEach(n => {
+    const b = el("button", { class: "navbtn", onclick: () => go(n.id) }, []);
+    b.innerHTML = ICON[n.icon] + "<span>" + n.label + "</span>";
+    b.dataset.nav = n.id;
+    if (S.view === n.id) b.setAttribute("aria-current", "page");
+    const c = badgeFor(n.id);
+    if (c) b.appendChild(el("span", { class: "count" + (c.hot ? " hot" : ""), text: String(c.n) }));
+    nav.appendChild(b);
+  });
+  const tabIds = ["dashboard", "map", "alerts", "chat", S.isAdmin ? "admin" : "settings"];
+  tabIds.forEach(id => {
+    const n = NAV.find(x => x.id === id);
+    const b = el("button", { onclick: () => go(id) });
+    b.innerHTML = ICON[n.icon] + "<span>" + (n.id === "chat" ? "Chat" : n.label.split(" ")[0]) + "</span>";
+    if (S.view === id) b.setAttribute("aria-current", "page");
+    const c = badgeFor(id);
+    if (c) b.appendChild(el("span", { class: "dot" }));
+    tabs.appendChild(b);
+  });
+}
+function badgeFor(id) {
+  if (id === "chat") {
+    const n = unreadTotal();
+    const hot = activeSOS().length > 0;
+    if (n || hot) return { n: n || activeSOS().length, hot };
+  }
+  if (id === "report" && S.isAdmin) {
+    const n = S.reports.filter(r => r.status === "open").length;
+    if (n) return { n };
+  }
+  if (id === "alerts") {
+    const last = LS.get("seenAlerts", 0);
+    const n = S.alerts.filter(a => a.ts > last).length;
+    if (n) return { n, hot: S.alerts.some(a => a.ts > last && a.level === "evacuate") };
+  }
+  return null;
+}
+function go(v) {
+  S.view = v;
+  if (v === "alerts") LS.set("seenAlerts", Date.now());
+  if (v === "chat") markChannelRead();
+  render();
+  const view = $("#view"); if (view) view.scrollTop = 0;
+}
+
+S.mapcfg = DEFAULT_MAP; S.gauges = DEFAULT_GAUGES; S.rooms = DEFAULT_ROOMS;
+
+async function boot() {
+  let device = loadDevice();
+  if (!device.name) {
+    device.name = await askName();
+    saveDevice(device);
+  }
+  S.deviceId = device.id;
+  S.me = { id: device.id, name: device.name, avatarUrl: avatarFor(device.id, device.name, device.color), color: device.color };
+  await registerIdentity(device);
+
+  const stream = new Stream(device.id);
+  S.db = new LocalDB(stream, device.id);
+  S.room = new LocalRoom(stream, device.id);
+  S.user = new LocalUser(device.id, device);
+  S.baseAdmin = false;
+  S.isAdmin = false;
+  S.canWrite = true;
+
+  $("#meav").src = S.me.avatarUrl || "";
+  $("#mename").textContent = S.me.name || "You";
+  $("#merole").textContent = S.isAdmin ? "Administrator" : "Citizen";
+
+  S.seen = LS.get("seen", {});
+  S.notify = LS.get("notify", false);
+  S.view = "dashboard";
+  S.ready = true;
+
+  subscribeAll();
+  wireRoom();
+  if (LS.get("shareLocation", false)) startGeo();
+  render(); buildNav();
+  startTitleFlasher();
+}
+async function claimAdmin(code) {
+  try {
+    const r = await fetch("/api/claim-admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: S.deviceId, code }) });
+    if (!r.ok) { toast("That code didn't match.", true); return false; }
+    toast("You're an administrator now.");
+    return true;
+  } catch (e) { toast("Couldn't reach the server.", true); return false; }
+}
+
+async function seedIfEmpty() {
+  /* the local server seeds its own defaults on first run — nothing to do here */
+}
+
+function sub(path, isDoc, fn) {
+  try {
+    const ref = isDoc ? S.db.doc(path) : path;
+    return ref.onSnapshot(fn, e => { if (e.code !== "unavailable") console.warn(path, e.code); });
+  } catch (e) { console.warn("sub", path, e); return () => { }; }
+}
+function docsOf(snap) { return snap.docs.map(d => Object.assign({ id: d.id }, d.data())); }
+
+function subscribeAll() {
+  const db = S.db;
+  sub("meta/config", true, s => { S.config = s.exists ? s.data() : {}; S.rooms = (S.config.rooms || DEFAULT_ROOMS); onConfig(); });
+  sub("meta/map", true, s => { const d = s.exists ? s.data() : {}; S.mapcfg = Object.assign({}, DEFAULT_MAP, d); S.gauges = d.gauges || DEFAULT_GAUGES; rerender(); });
+  sub(db.collection("alerts").orderBy("ts", "desc").limit(60), false, s => { S.alerts = docsOf(s); notifyNewAlerts(); rerender(); });
+  sub(db.collection("shelters").limit(80), false, s => { S.shelters = docsOf(s); rerender(); });
+  sub(db.collection("reports").orderBy("ts", "desc").limit(120), false, s => { S.reports = docsOf(s); rerender(); });
+  sub(db.collection("checkins").limit(300), false, s => { S.checkins = docsOf(s); rerender(); });
+  sub(db.collection("members").limit(300), false, s => {
+    const m = {}; docsOf(s).forEach(d => m[d.id] = d); S.members = m;
+    if (S.me.id && m[S.me.id] && m[S.me.id].removed) renderRemoved();
+    recomputeAdmin(); rerender();
+  });
+  sub(db.collection("messages").orderBy("ts", "desc").limit(260), false, s => {
+    const prev = S.messages;
+    S.messages = docsOf(s).reverse();
+    onMessages(prev);
+  });
+  if (S.me.id) sub("addresses/" + S.me.id, true, s => { S.myAddress = s.exists ? s.data() : null; if (S.view === "settings") rerender(); });
+  if (S.isAdmin) sub(db.collection("addresses").limit(400), false, s => { S.addresses = docsOf(s); if (S.view === "admin") rerender(); });
+}
+
+function onConfig() {
+  if (S.config.pinOn && S.config.pin && !S.unlocked && !S.isAdmin) {
+    if (LS.get("pinOk", "") === String(S.config.pin)) S.unlocked = true; else return showLobby();
+  }
+  $("#lobbyroot").innerHTML = "";
+  rerender(); buildNav(); renderPinBar();
+}
+
+/* ---------- join gate ---------- */
+function showLobby() {
+  const root = $("#lobbyroot");
+  if ($("#lobby")) return;
+  root.innerHTML = "";
+  const input = el("input", { type: "password", inputmode: "numeric", maxlength: "10", "aria-label": "Join code", placeholder: "••••" });
+  const msg = el("p", { class: "muted", style: "min-height:1.2em;font-size:.82rem", text: "" });
+  const submit = () => {
+    if (String(input.value).trim() === String(S.config.pin)) {
+      S.unlocked = true; LS.set("pinOk", String(S.config.pin)); root.innerHTML = "";
+      rerender(); buildNav(); renderPinBar(); toast("Welcome in.");
+    } else { msg.textContent = "That code doesn't match. Ask the control room for the current one."; input.value = ""; input.focus(); }
+  };
+  input.addEventListener("keydown", e => { if (e.key === "Enter") submit(); });
+  root.appendChild(el("div", { id: "lobby" }, [
+    el("div", { class: "card" }, [
+      el("div", { class: "mk", html: '<svg viewBox="0 0 32 32" style="width:100%;height:100%"><circle cx="16" cy="16" r="15" fill="none" stroke="var(--hydro)" stroke-width="1.5"/><path d="M2 19c3.4 0 3.4-3.6 6.8-3.6S12.2 19 15.6 19s3.4-3.6 6.8-3.6S25.8 19 29.2 19" fill="none" stroke="var(--hydro)" stroke-width="1.8" stroke-linecap="round"/><path d="M16 4.5v7M16 14.5v.2" stroke="var(--signal)" stroke-width="2.4" stroke-linecap="round"/></svg>' }),
+      el("h1", { text: "MeridianSOS" }),
+      el("p", { text: "This response group is locked. Enter the join code from the control room." }),
+      el("div", { style: "margin:18px 0 10px" }, [input]),
+      msg,
+      el("button", { class: "btn primary", text: "Enter", style: "width:100%;justify-content:center;margin-top:6px", onclick: submit }),
+    ])
+  ]));
+  setTimeout(() => input.focus(), 50);
+}
+function renderRemoved() {
+  const root = $("#lobbyroot");
+  root.innerHTML = "";
+  root.appendChild(el("div", { id: "lobby" }, [el("div", { class: "card" }, [
+    el("h1", { text: "You've been removed" }),
+    el("p", { text: "An administrator removed you from this response group. If that's a mistake, contact the control room." })
+  ])]));
+}
+
+/* ============================================================
+   Live room: presence + typing
+   ============================================================ */
+function wireRoom() {
+  if (!S.room) return;
+  try {
+    S.room.presence({ uid: S.me.id || "anon", view: S.view, chan: chanKey(), ts: Date.now() });
+    S.room.onPeers(ch => { S.peers = ch.peers.filter(p => p.kind === "viewer"); if (S.view === "chat") renderChatSidebars(); });
+    S.room.on("typing", m => {
+      if (m.isMe) return;
+      const d = m.data || {};
+      if (!d.uid || d.chan !== chanKey()) return;
+      S.typing[d.uid] = Date.now();
+      paintTyping();
+    });
+  } catch (e) { }
+}
+function pushPresence() { if (S.room) S.room.presence({ uid: S.me.id || "anon", view: S.view, chan: chanKey(), ts: Date.now() }).catch(() => { }); }
+let typingSentAt = 0;
+function sendTyping() {
+  if (!S.room) return;
+  const t = Date.now(); if (t - typingSentAt < 2600) return; typingSentAt = t;
+  S.room.emit("typing", { uid: S.me.id || "anon", chan: chanKey() }).catch(() => { });
+}
+function paintTyping() {
+  const box = $("#typing"); if (!box) return;
+  const cut = Date.now() - 5200;
+  const ids = Object.keys(S.typing).filter(k => S.typing[k] > cut && k !== S.me.id);
+  if (!ids.length) { box.textContent = ""; return; }
+  resolveProfiles(ids).then(ps => {
+    const names = ids.map(i => (ps[i] && ps[i].name) || "Someone");
+    box.textContent = names.length === 1 ? names[0] + " is typing…" : names.length === 2 ? names.join(" and ") + " are typing…" : "Several people are typing…";
+  });
+}
+setInterval(() => { if (S.view === "chat") paintTyping(); }, 2000);
+
+async function resolveProfiles(ids) {
+  const list = Array.from(new Set(ids.filter(Boolean)));
+  if (!S.user || !list.length) { const o = {}; list.forEach(i => o[i] = { name: "", avatarUrl: "", color: "#8aa" }); return o; }
+  try { const ps = await S.user.profiles(list); Object.assign(S.profileCache, ps); return ps; }
+  catch (e) { const o = {}; list.forEach(i => o[i] = { name: "", avatarUrl: "", color: "#8aa" }); return o; }
+}
+const nameOf = id => (S.profileCache[id] && S.profileCache[id].name) || (id === S.me.id ? (S.me.name || "You") : "Someone");
+const avatarOf = id => (S.profileCache[id] && S.profileCache[id].avatarUrl) || (id === S.me.id ? S.me.avatarUrl : "");
+
+/* ============================================================
+   Notifications + tab title
+   ============================================================ */
+async function askNotify() {
+  if (!("Notification" in window)) { toast("This browser has no notification support.", true); return false; }
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission === "denied") { toast("Notifications are blocked in your browser settings.", true); return false; }
+  const p = await Notification.requestPermission();
+  return p === "granted";
+}
+function notify(title, body, tag) {
+  if (!S.notify || !("Notification" in window) || Notification.permission !== "granted") return;
+  if (!document.hidden) return;
+  try { const n = new Notification(title, { body, tag, silent: true }); n.onclick = () => { window.focus(); n.close(); }; } catch (e) { }
+}
+let lastAlertTs = 0;
+function notifyNewAlerts() {
+  const top = S.alerts[0];
+  if (!top) return;
+  if (lastAlertTs && top.ts > lastAlertTs) notify("Alert: " + LEVELS[top.level === "advisory" ? "normal" : top.level].t, top.title, "alert");
+  lastAlertTs = Math.max(lastAlertTs, top.ts);
+}
+let flashOn = false, baseTitle = document.title;
+function startTitleFlasher() {
+  setInterval(() => {
+    const sos = activeSOS();
+    const unread = unreadTotal();
+    if (sos.length && document.hidden) { flashOn = !flashOn; document.title = flashOn ? "🆘 SOS — help needed" : baseTitle; }
+    else if (unread && document.hidden) document.title = "(" + unread + ") " + baseTitle;
+    else document.title = (sos.length ? "🆘 " : "") + baseTitle;
+  }, 1000);
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { document.title = baseTitle; markChannelRead(); } });
+
+/* ============================================================
+   SOS
+   ============================================================ */
+const activeSOS = () => S.messages.filter(m => m.kind === "sos" && m.sos && m.sos.status !== "resolved" && !m.deleted);
+function sosDistance(m) {
+  if (!S.geo || !m.sos || m.sos.lat == null) return null;
+  return haversine(S.geo.lat, S.geo.lng, m.sos.lat, m.sos.lng);
+}
+function renderPinBar() {
+  const bar = $("#pinbar"); if (!bar) return;
+  bar.innerHTML = "";
+  const list = activeSOS().sort((a, b) => b.ts - a.ts);
+  if (list.length) {
+    const m = list[0], s = m.sos;
+    const dist = fmtDist(sosDistance(m));
+    const mine = m.uid === S.me.id;
+    const enroute = (s.responders || []).includes(S.me.id);
+    const meta = [nameOf(m.uid), s.category, fmtWhen(s.updatedAt || m.ts), dist].filter(Boolean).join(" · ");
+    const acts = el("div", { class: "acts" });
+    if (!mine) acts.appendChild(el("button", {
+      text: enroute ? "On my way ✓" : "I'm on my way",
+      onclick: () => respondSOS(m.id)
+    }));
+    if (mine || S.isAdmin || enroute) acts.appendChild(el("button", { text: "Resolved", onclick: () => resolveSOS(m.id) }));
+    acts.appendChild(el("button", { text: "Open", onclick: () => { S.chan = m.dm ? { type: "dm", id: m.dm } : { type: "room", id: m.room }; go("chat"); setTimeout(() => scrollToMsg(m.id), 120); } }));
+    bar.appendChild(el("div", { class: "pin" }, [
+      el("span", { class: "pulse" }),
+      el("div", { class: "txt" }, [
+        el("div", {}, [el("b", { text: "SOS — " + (s.category || "Help needed") }), s.note ? el("span", { text: " · " + s.note.slice(0, 80) }) : null]),
+        el("div", { class: "meta", text: meta })
+      ]),
+      list.length > 1 ? el("span", { class: "more", text: "+" + (list.length - 1) + " more" }) : null,
+      acts
+    ]));
+  }
+  if (S.config.announcement) {
+    bar.appendChild(el("div", { class: "ann" }, [
+      el("div", {}, [
+        el("span", { class: "from", text: "Control room announcement" }),
+        el("span", { text: S.config.announcement })
+      ])
+    ]));
+  }
+}
+async function sendSOS() {
+  if (isMuted()) return toast("You're muted in this group.", true);
+  openModal("Send an SOS", (body, close) => {
+    const cat = el("select", {}, ["Trapped by water", "Medical emergency", "Need evacuation", "Structure collapse", "Missing person", "Need supplies"].map(x => el("option", { text: x })));
+    const note = el("textarea", { placeholder: "How many people, what's happening, anything a responder should know." });
+    const zone = el("select", {}, [el("option", { text: "" })].concat((S.mapcfg.zones || DEFAULT_ZONES).map(z => el("option", { text: z.name, selected: (S.myAddress && S.myAddress.zone) === z.name }))));
+    const share = el("input", { type: "checkbox", checked: true });
+    const live = el("input", { type: "checkbox", checked: true });
+    body.appendChild(el("p", { class: "muted", style: "font-size:.86rem", text: "This goes to everyone in the group and stays pinned to the top until someone marks it resolved." }));
+    body.appendChild(el("label", { class: "fld" }, [el("span", { text: "What do you need?" }), cat]));
+    body.appendChild(el("label", { class: "fld" }, [el("span", { text: "Details" }), note]));
+    body.appendChild(el("label", { class: "fld" }, [el("span", { text: "Which zone are you in?" }), zone]));
+    body.appendChild(el("label", { class: "check" }, [share, el("span", { class: "lbl", text: "Attach my location" })]));
+    body.appendChild(el("label", { class: "check" }, [live, el("span", { class: "lbl", text: "Keep my location updating for 5 minutes" })]));
+    const go = el("button", { class: "btn danger", text: "Send SOS", onclick: async () => {
+      go.disabled = true; go.textContent = "Sending…";
+      let pos = null;
+      if (share.checked) { try { pos = await getPosition(); } catch (e) { toast("Couldn't read your location — sending without it.", true); } }
+      const id = "m" + uid();
+      const doc = {
+        kind: "sos", uid: S.me.id || "anon", ts: nowIso(),
+        room: S.chan.type === "room" ? S.chan.id : "general",
+        dm: S.chan.type === "dm" ? S.chan.id : null,
+        text: "", reactions: {},
+        sos: {
+          category: cat.value, note: note.value.trim(), zone: zone.value, status: "active", responders: [],
+          lat: pos ? pos.lat : null, lng: pos ? pos.lng : null, acc: pos ? pos.acc : null,
+          live: !!(live.checked && pos), updatedAt: nowIso(), track: pos ? [{ lat: pos.lat, lng: pos.lng, ts: nowIso() }] : []
+        }
+      };
+      try {
+        await S.db.doc("messages/" + id).set(doc);
+        close(); toast("SOS sent. Stay where you are if it's safe.");
+        if (live.checked && pos) startSOSTracking(id);
+      } catch (e) { go.disabled = false; go.textContent = "Send SOS"; toast("Couldn't send — " + (e.code || "try again"), true); }
+    } });
+    body.appendChild(el("div", { style: "margin-top:14px;display:flex;gap:8px;justify-content:flex-end" }, [
+      el("button", { class: "btn", text: "Cancel", onclick: close }), go
+    ]));
+  });
+}
+function getPosition() {
+  return new Promise((res, rej) => {
+    if (!navigator.geolocation) return rej(new Error("no geolocation"));
+    navigator.geolocation.getCurrentPosition(
+      p => res({ lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: Math.round(p.coords.accuracy) }),
+      rej, { enableHighAccuracy: true, timeout: 12000, maximumAge: 15000 });
+  });
+}
+function startSOSTracking(msgId) {
+  stopSOSTracking();
+  S.sosDocId = msgId; S.sosStop = Date.now() + 5 * 60 * 1000;
+  let last = 0;
+  S.sosWatch = navigator.geolocation.watchPosition(async p => {
+    if (Date.now() > S.sosStop) { stopSOSTracking(); return; }
+    if (Date.now() - last < 15000) return; last = Date.now();
+    const pt = { lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), ts: nowIso() };
+    const m = S.messages.find(x => x.id === msgId);
+    const track = ((m && m.sos && m.sos.track) || []).concat([pt]).slice(-24);
+    try { await S.db.doc("messages/" + msgId).update({ sos: Object.assign({}, m ? m.sos : {}, { lat: pt.lat, lng: pt.lng, updatedAt: pt.ts, live: true, track }) }); } catch (e) { }
+  }, () => { }, { enableHighAccuracy: true, maximumAge: 10000 });
+  setTimeout(stopSOSTracking, 5 * 60 * 1000 + 2000);
+}
+async function stopSOSTracking() {
+  if (S.sosWatch != null) { navigator.geolocation.clearWatch(S.sosWatch); S.sosWatch = null; }
+  const id = S.sosDocId; S.sosDocId = null;
+  if (id) { const m = S.messages.find(x => x.id === id); if (m && m.sos && m.sos.live) { try { await S.db.doc("messages/" + id).update({ sos: Object.assign({}, m.sos, { live: false }) }); } catch (e) { } } }
+}
+async function respondSOS(id) {
+  const m = S.messages.find(x => x.id === id); if (!m) return;
+  const r = new Set(m.sos.responders || []);
+  if (r.has(S.me.id)) r.delete(S.me.id); else r.add(S.me.id);
+  try {
+    await S.db.doc("messages/" + id).update({ sos: Object.assign({}, m.sos, { responders: Array.from(r), status: r.size ? "enroute" : "active" }) });
+    if (r.has(S.me.id)) toast("Marked as on your way. Keep the chat open.");
+  } catch (e) { toast("Couldn't update that SOS.", true); }
+}
+async function resolveSOS(id) {
+  const ok = await confirmish("Mark this SOS resolved?", "The alert stops being pinned and the card turns grey. Anyone can reopen it if it wasn't sorted.", "Mark resolved");
+  if (!ok) return;
+  const m = S.messages.find(x => x.id === id); if (!m) return;
+  try { await S.db.doc("messages/" + id).update({ sos: Object.assign({}, m.sos, { status: "resolved", resolvedBy: S.me.id, resolvedAt: nowIso(), live: false }) }); toast("Resolved."); }
+  catch (e) { toast("Couldn't update that SOS.", true); }
+}
+async function reopenSOS(id) {
+  const m = S.messages.find(x => x.id === id); if (!m) return;
+  try { await S.db.doc("messages/" + id).update({ sos: Object.assign({}, m.sos, { status: "active", resolvedBy: null, resolvedAt: 0 }) }); } catch (e) { }
+}
+
+/* ---------- viewer location ---------- */
+function startGeo() {
+  if (!navigator.geolocation || S.geoWatch != null) return;
+  S.geoWatch = navigator.geolocation.watchPosition(p => {
+    S.geo = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy };
+    renderPinBar(); if (S.view === "chat" || S.view === "map" || S.view === "shelters") rerender();
+  }, () => { }, { enableHighAccuracy: false, maximumAge: 60000, timeout: 20000 });
+}
+function stopGeo() { if (S.geoWatch != null) { navigator.geolocation.clearWatch(S.geoWatch); S.geoWatch = null; S.geo = null; } }
+
+/* ============================================================
+   Chat
+   ============================================================ */
+const chanKey = () => S.chan.type === "dm" ? "dm:" + S.chan.id : "room:" + S.chan.id;
+const dmKey = (a, b) => [a, b].sort().join("~");
+const isMuted = () => !!(S.me.id && S.members[S.me.id] && S.members[S.me.id].muted);
+function messagesFor(ch) {
+  return S.messages.filter(m => ch.type === "dm" ? m.dm === ch.id : (!m.dm && (m.room || "general") === ch.id));
+}
+function unreadIn(ch) {
+  const k = ch.type === "dm" ? "dm:" + ch.id : "room:" + ch.id;
+  const since = S.seen[k] || 0;
+  return messagesFor(ch).filter(m => m.ts > since && m.uid !== S.me.id && !m.deleted).length;
+}
+function unreadTotal() {
+  let n = 0;
+  S.rooms.forEach(r => n += unreadIn({ type: "room", id: r.id }));
+  dmChannels().forEach(d => n += unreadIn({ type: "dm", id: d.id }));
+  return n;
+}
+function dmChannels() {
+  const seen = {};
+  S.messages.forEach(m => {
+    if (!m.dm) return;
+    const parts = m.dm.split("~");
+    if (!S.me.id || parts.indexOf(S.me.id) === -1) return;
+    const other = parts.find(p => p !== S.me.id) || S.me.id;
+    seen[m.dm] = { id: m.dm, other, ts: Math.max(seen[m.dm] ? seen[m.dm].ts : 0, m.ts) };
+  });
+  const extra = LS.get("dms", []);
+  extra.forEach(d => { if (!seen[d.id]) seen[d.id] = d; });
+  return Object.values(seen).sort((a, b) => b.ts - a.ts);
+}
+function markChannelRead() {
+  const k = chanKey();
+  S.seen[k] = Date.now(); LS.set("seen", S.seen);
+  buildNav();
+}
+let lastMsgCount = 0;
+function onMessages(prev) {
+  const prevIds = new Set(prev.map(m => m.id));
+  const fresh = S.messages.filter(m => !prevIds.has(m.id));
+  if (prev.length) {
+    fresh.forEach(m => {
+      if (m.uid === S.me.id) return;
+      if (m.kind === "sos") notify("SOS — " + (m.sos && m.sos.category || "Help needed"), (m.sos && m.sos.note) || nameOf(m.uid), "sos-" + m.id);
+      else if (m.dm && S.me.id && m.dm.split("~").includes(S.me.id)) notify("Direct message", previewOf(m), "dm");
+      else notify("New message in " + roomName(m.room), previewOf(m), "msg");
+    });
+  }
+  renderPinBar(); buildNav();
+  if (S.view === "chat") renderChat(); else rerender();
+  ensureProfiles();
+}
+function previewOf(m) { return m.kind === "voice" ? "Voice note" : (m.text || "").slice(0, 90); }
+const roomName = id => (S.rooms.find(r => r.id === id) || { name: id || "General" }).name;
+function ensureProfiles() {
+  const ids = new Set();
+  S.messages.slice(-80).forEach(m => { ids.add(m.uid); (m.sos && m.sos.responders || []).forEach(r => ids.add(r)); });
+  S.reports.slice(0, 40).forEach(r => ids.add(r.uid));
+  dmChannels().forEach(d => ids.add(d.other));
+  Object.keys(S.members).forEach(k => ids.add(k));
+  S.addresses.forEach(a => ids.add(a.id));
+  const list = Array.from(ids).filter(Boolean);
+  if (!list.length) return;
+  resolveProfiles(list).then(() => { if (S.view === "chat") renderChat(); else if (["admin", "report", "shelters"].includes(S.view)) rerender(); });
+}
+
+function viewChat() {
+  const wrap = el("div", { id: "chatview" });
+  wrap.appendChild(el("aside", { id: "chanlist" }));
+  const main = el("div", { id: "chatmain" }, [
+    el("div", { id: "chathead" }),
+    el("div", { id: "msgs" }),
+    el("div", { id: "composer" }, [
+      el("div", { id: "replybar" }),
+      el("div", { id: "typing" }),
+      el("div", { class: "cbox" }, [
+        el("button", { class: "iconbtn sos", html: ICON.sos, title: "Send an SOS", "aria-label": "Send an SOS", onclick: sendSOS }),
+        el("textarea", { id: "inp", rows: "1", placeholder: "Message", "aria-label": "Message" }),
+        el("button", { class: "iconbtn", id: "micbtn", html: ICON.mic, title: "Record a voice note", "aria-label": "Record a voice note", onclick: toggleRecord }),
+        el("button", { class: "iconbtn send", html: ICON.send, title: "Send", "aria-label": "Send", onclick: sendText })
+      ])
+    ])
+  ]);
+  wrap.appendChild(main);
+  return wrap;
+}
+function renderChatSidebars() {
+  const list = $("#chanlist"); if (!list) return;
+  list.innerHTML = "";
+  const onlineIds = new Set(S.peers.map(p => p.presence && p.presence.uid).filter(Boolean));
+  const g1 = el("div", { class: "grp" }, [el("span", { text: "Rooms" })]);
+  if (S.isAdmin) g1.appendChild(el("button", { html: "+", title: "Add a room", onclick: addRoom }));
+  list.appendChild(g1);
+  S.rooms.forEach(r => {
+    const n = unreadIn({ type: "room", id: r.id });
+    const b = el("button", { class: "chan", onclick: () => { S.chan = { type: "room", id: r.id }; markChannelRead(); renderChat(true); renderChatSidebars(); $("#chanlist").classList.remove("open"); pushPresence(); } }, [
+      el("span", { class: "hash", text: "#" }), el("span", { class: "nm", text: r.name }),
+      n ? el("span", { class: "n", text: String(n) }) : null
+    ]);
+    if (S.chan.type === "room" && S.chan.id === r.id) b.setAttribute("aria-current", "true");
+    list.appendChild(b);
+  });
+  const g2 = el("div", { class: "grp" }, [el("span", { text: "Direct messages" }), el("button", { html: "+", title: "Start a direct message", onclick: newDM })]);
+  list.appendChild(g2);
+  const dms = dmChannels();
+  if (!dms.length) list.appendChild(el("div", { class: "muted", style: "padding:2px 12px 8px;font-size:.78rem", text: "No conversations yet." }));
+  dms.forEach(d => {
+    const n = unreadIn({ type: "dm", id: d.id });
+    const b = el("button", { class: "chan", onclick: () => { S.chan = { type: "dm", id: d.id }; markChannelRead(); renderChat(true); renderChatSidebars(); $("#chanlist").classList.remove("open"); pushPresence(); } }, [
+      el("span", { class: "presencedot" + (onlineIds.has(d.other) ? "" : " off") }),
+      el("span", { class: "nm", text: nameOf(d.other) }),
+      n ? el("span", { class: "n", text: String(n) }) : null
+    ]);
+    if (S.chan.type === "dm" && S.chan.id === d.id) b.setAttribute("aria-current", "true");
+    list.appendChild(b);
+  });
+  const here = S.peers.length;
+  list.appendChild(el("div", { class: "grp" }, [el("span", { text: "Online now — " + here })]));
+  const shown = new Set();
+  S.peers.forEach(p => {
+    const id = p.presence && p.presence.uid; if (!id || shown.has(id)) return; shown.add(id);
+    list.appendChild(el("div", { class: "chan", style: "cursor:default" }, [
+      el("span", { class: "presencedot" }),
+      el("span", { class: "nm", text: id === S.me.id ? (S.me.name || "You") + " (you)" : nameOf(id) })
+    ]));
+  });
+}
+function renderChatHead() {
+  const h = $("#chathead"); if (!h) return;
+  h.innerHTML = "";
+  h.appendChild(el("button", { class: "iconbtn", html: ICON.menu, style: "display:none", id: "chanbtn", "aria-label": "Channels", onclick: () => $("#chanlist").classList.toggle("open") }));
+  const t = el("div", { class: "t" });
+  if (S.chan.type === "room") {
+    const r = S.rooms.find(x => x.id === S.chan.id) || { name: S.chan.id, desc: "" };
+    t.appendChild(el("h3", { text: "#" + r.name }));
+    t.appendChild(el("div", { class: "sub", text: r.desc || "" }));
+  } else {
+    const other = S.chan.id.split("~").find(p => p !== S.me.id) || S.me.id;
+    t.appendChild(el("h3", { text: nameOf(other) }));
+    t.appendChild(el("div", { class: "sub", text: "Direct message — only the two of you see this" }));
+  }
+  h.appendChild(t);
+  if (isMuted()) h.appendChild(el("span", { class: "tag hot", text: "You're muted" }));
+  if (window.innerWidth <= 860) $("#chanbtn", h).style.display = "flex";
+}
+function renderChat(scroll) {
+  if (S.view !== "chat") return;
+  renderChatSidebars(); renderChatHead();
+  const box = $("#msgs"); if (!box) return;
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+  box.innerHTML = "";
+  const list = messagesFor(S.chan);
+  if (!list.length) {
+    box.appendChild(el("div", { class: "empty" }, [el("b", { text: "Nothing here yet" }), el("span", { text: S.chan.type === "dm" ? "Say hello." : "Post an update, or hit the red button if you need help." })]));
+  }
+  let lastDay = "", lastUid = "", lastTs = 0;
+  list.forEach(m => {
+    const day = fmtDay(m.ts);
+    if (day !== lastDay) { box.appendChild(el("div", { class: "daysep", text: day })); lastDay = day; lastUid = ""; }
+    const cont = m.uid === lastUid && m.ts - lastTs < 5 * 60000 && m.kind !== "sos";
+    box.appendChild(renderMsg(m, cont));
+    lastUid = m.kind === "sos" ? "" : m.uid; lastTs = m.ts;
+  });
+  if (scroll || atBottom) box.scrollTop = box.scrollHeight;
+  paintTyping();
+}
+function scrollToMsg(id) {
+  const n = document.querySelector('[data-msg="' + id + '"]');
+  if (n) { n.scrollIntoView({ block: "center" }); n.style.transition = "background .6s"; n.style.background = "color-mix(in srgb,var(--hydro) 16%,transparent)"; setTimeout(() => n.style.background = "", 1400); }
+}
+function renderMsg(m, cont) {
+  if (m.kind === "system") return el("div", { class: "sysmsg", text: m.text, "data-msg": m.id });
+  const wrap = el("div", { class: "msg" + (cont ? " cont" : ""), "data-msg": m.id });
+  const av = el("div", { class: "av" });
+  if (!cont) av.appendChild(el("img", { src: avatarOf(m.uid) || "", alt: "" }));
+  wrap.appendChild(av);
+  const bd = el("div", { class: "bd" });
+  if (!cont) {
+    const hd = el("div", { class: "hd" }, [el("b", { text: m.uid === S.me.id ? (S.me.name || "You") : nameOf(m.uid) }), el("span", { class: "ts", text: fmtTime(m.ts) })]);
+    if (isAdminUid(m.uid)) hd.appendChild(el("span", { class: "role", text: "admin" }));
+    bd.appendChild(hd);
+  }
+  if (m.deleted) { bd.appendChild(el("div", { class: "tx muted", style: "font-style:italic", text: "Message deleted" })); wrap.appendChild(bd); return wrap; }
+  if (m.replyTo) bd.appendChild(el("div", { class: "replyq", onclick: () => scrollToMsg(m.replyTo.id) }, [el("b", { text: nameOf(m.replyTo.uid) + ": " }), el("span", { text: (m.replyTo.text || "attachment").slice(0, 110) })]));
+  if (m.kind === "sos") bd.appendChild(renderSOSCard(m));
+  else if (m.kind === "voice") bd.appendChild(renderVoice(m));
+  else {
+    bd.appendChild(el("div", { class: "tx" }, [document.createTextNode(m.text || ""), m.edited ? el("span", { class: "ts", text: "  (edited)" }) : null]));
+    const link = firstLink(m.text);
+    if (link) bd.appendChild(linkCard(link));
+  }
+  if (m.reactions && Object.keys(m.reactions).length) {
+    const rr = el("div", { class: "reacts" });
+    Object.keys(m.reactions).forEach(e => {
+      const who = m.reactions[e] || []; if (!who.length) return;
+      rr.appendChild(el("button", { class: "react" + (who.includes(S.me.id) ? " mine" : ""), title: who.map(nameOf).join(", "), onclick: () => react(m.id, e) }, [el("span", { text: e }), el("span", { text: String(who.length) })]));
+    });
+    if (rr.children.length) bd.appendChild(rr);
+  }
+  wrap.appendChild(bd);
+  const tools = el("div", { class: "tools" });
+  tools.appendChild(el("button", { text: "😊", title: "React", onclick: e => emojiMenu(e.currentTarget, m.id) }));
+  tools.appendChild(el("button", { text: "↩", title: "Reply", onclick: () => startReply(m) }));
+  if (m.uid === S.me.id && m.kind === "text") tools.appendChild(el("button", { text: "✎", title: "Edit", onclick: () => startEdit(m) }));
+  if (m.uid === S.me.id || S.isAdmin) tools.appendChild(el("button", { text: "🗑", title: "Delete", onclick: () => delMsg(m.id) }));
+  wrap.appendChild(tools);
+  return wrap;
+}
+function isAdminUid(id) { return !!(S.members[id] && S.members[id].admin); }
+function firstLink(t) { const m = /(https?:\/\/[^\s<>"']+)/i.exec(t || ""); return m ? m[1] : null; }
+function linkCard(url) {
+  let host = url, path = "";
+  try { const u = new URL(url); host = u.hostname.replace(/^www\./, ""); path = (u.pathname + u.search).replace(/\/$/, "") || "/"; } catch (e) { }
+  return el("a", { class: "linkcard", href: url, target: "_blank", rel: "noopener noreferrer" }, [
+    el("div", { class: "host", text: host }), el("div", { class: "path", text: decodeURI(path) })
+  ]);
+}
+function renderSOSCard(m) {
+  const s = m.sos || {};
+  const done = s.status === "resolved";
+  const card = el("div", { class: "sos" + (done ? " resolved" : "") });
+  card.appendChild(el("div", { class: "sostitle" }, [
+    el("span", { text: done ? "✓" : "🆘" }),
+    el("span", { text: done ? "Resolved — " + (s.category || "SOS") : "SOS — " + (s.category || "Help needed") })
+  ]));
+  if (s.note) card.appendChild(el("p", { class: "note", text: s.note }));
+  const facts = el("div", { class: "facts" });
+  const d = sosDistance(m);
+  if (s.zone) facts.appendChild(el("span", { class: "tag", text: s.zone }));
+  if (d != null) facts.appendChild(el("span", { class: "tag", text: fmtDist(d) }));
+  else if (s.lat != null) facts.appendChild(el("span", { class: "tag", text: "Location attached — turn on location sharing in Settings to see distance" }));
+  if (s.lat != null) facts.appendChild(el("span", { class: "tag mono", text: s.lat.toFixed(4) + ", " + s.lng.toFixed(4) }));
+  if (s.acc) facts.appendChild(el("span", { class: "tag", text: "±" + s.acc + " m" }));
+  if (s.live && !done && (Date.now() - (s.updatedAt || m.ts) < 6 * 60000)) facts.appendChild(el("span", { class: "tag hot" }, [el("i", { class: "livedot" }), el("span", { text: "Live, updated " + fmtWhen(s.updatedAt || m.ts) })]));
+  if ((s.track || []).length > 1) facts.appendChild(el("span", { class: "tag", text: s.track.length + " location updates" }));
+  if (done && s.resolvedBy) facts.appendChild(el("span", { class: "tag", text: "Closed by " + nameOf(s.resolvedBy) + " " + fmtWhen(s.resolvedAt || Date.now()) }));
+  card.appendChild(facts);
+  const resp = s.responders || [];
+  if (resp.length) card.appendChild(el("div", { class: "resp", text: resp.map(nameOf).join(", ") + (resp.length === 1 ? " is" : " are") + " on the way." }));
+  const acts = el("div", { class: "acts" });
+  if (!done) {
+    if (m.uid !== S.me.id) acts.appendChild(el("button", { class: "btn sm " + (resp.includes(S.me.id) ? "" : "primary"), text: resp.includes(S.me.id) ? "Cancel — not coming" : "I'm on my way", onclick: () => respondSOS(m.id) }));
+    acts.appendChild(el("button", { class: "btn sm", text: "Resolved", onclick: () => resolveSOS(m.id) }));
+    if (s.lat != null) acts.appendChild(el("button", { class: "btn sm", text: "Show on map", onclick: () => { S.focusSOS = m.id; go("map"); } }));
+  } else {
+    acts.appendChild(el("button", { class: "btn sm", text: "Reopen", onclick: () => reopenSOS(m.id) }));
+  }
+  card.appendChild(acts);
+  return card;
+}
+
+/* ---------- composer actions ---------- */
+function composerInput() { return $("#inp"); }
+function startReply(m) {
+  S.reply = { id: m.id, uid: m.uid, text: previewOf(m) };
+  const bar = $("#replybar"); if (!bar) return;
+  bar.innerHTML = ""; bar.classList.add("on");
+  bar.appendChild(el("span", { text: "Replying to " + nameOf(m.uid) + ": " + S.reply.text.slice(0, 60) }));
+  bar.appendChild(el("button", { class: "btn ghost sm", text: "Cancel", onclick: cancelReply }));
+  composerInput().focus();
+}
+function cancelReply() { S.reply = null; const b = $("#replybar"); if (b) { b.classList.remove("on"); b.innerHTML = ""; } }
+function startEdit(m) {
+  S.editing = m.id;
+  const inp = composerInput(); inp.value = m.text; inp.focus(); autosize(inp);
+  const bar = $("#replybar"); bar.innerHTML = ""; bar.classList.add("on");
+  bar.appendChild(el("span", { text: "Editing your message" }));
+  bar.appendChild(el("button", { class: "btn ghost sm", text: "Cancel", onclick: () => { S.editing = null; inp.value = ""; autosize(inp); cancelReply(); } }));
+}
+async function sendText() {
+  const inp = composerInput(); const t = inp.value.trim();
+  if (!t) return;
+  if (isMuted()) return toast("You're muted in this group.", true);
+  if (!S.db) return toast("Shared data isn't available in this view.", true);
+  if (S.editing) {
+    const id = S.editing; S.editing = null; inp.value = ""; autosize(inp); cancelReply();
+    try { await S.db.doc("messages/" + id).update({ text: t, edited: true }); } catch (e) { toast("Couldn't save the edit.", true); }
+    return;
+  }
+  const doc = {
+    kind: "text", uid: S.me.id || "anon", ts: nowIso(), text: t, reactions: {},
+    room: S.chan.type === "room" ? S.chan.id : null,
+    dm: S.chan.type === "dm" ? S.chan.id : null,
+    replyTo: S.reply || null
+  };
+  inp.value = ""; autosize(inp); cancelReply();
+  try { await S.db.doc("messages/m" + uid()).set(doc); markChannelRead(); }
+  catch (e) { toast(e.code === "quota_exceeded" ? "The message store is full — an admin can prune old messages in Admin." : "Message didn't send.", true); inp.value = t; }
+}
+async function delMsg(id) {
+  const ok = await confirmish("Delete this message?", "It stays in place as “Message deleted”.", "Delete", true);
+  if (!ok) return;
+  try { await S.db.doc("messages/" + id).update({ deleted: true, text: "" }); } catch (e) { toast("Couldn't delete.", true); }
+}
+async function react(id, emoji) {
+  const m = S.messages.find(x => x.id === id); if (!m) return;
+  const r = Object.assign({}, m.reactions || {});
+  const who = new Set(r[emoji] || []);
+  if (who.has(S.me.id)) who.delete(S.me.id); else who.add(S.me.id);
+  if (who.size) r[emoji] = Array.from(who); else delete r[emoji];
+  try { await S.db.doc("messages/" + id).update({ reactions: r }); } catch (e) { }
+}
+function emojiMenu(anchor, id) {
+  const list = ["👍", "✅", "🙏", "❤️", "😮", "🚨", "🛟", "👀"];
+  const close = openModal("React", (body, close) => {
+    const bar = el("div", { class: "emojibar" });
+    list.forEach(e => bar.appendChild(el("button", { text: e, onclick: () => { react(id, e); close(); } })));
+    body.appendChild(bar);
+  });
+}
+function autosize(t) { t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 132) + "px"; }
+document.addEventListener("keydown", e => {
+  const inp = document.getElementById("inp");
+  if (!inp || document.activeElement !== inp) return;
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendText(); }
+  if (e.key === "Escape") { S.editing = null; inp.value = ""; autosize(inp); cancelReply(); }
+});
+document.addEventListener("input", e => { if (e.target && e.target.id === "inp") { autosize(e.target); sendTyping(); } });
+
+/* ---------- voice notes ---------- */
+let rec = null, recChunks = [], recStart = 0, recTimer = null;
+async function toggleRecord() {
+  const btn = $("#micbtn");
+  if (rec && rec.state === "recording") { rec.stop(); return; }
+  if (isMuted()) return toast("You're muted in this group.", true);
+  if (!navigator.mediaDevices || !window.MediaRecorder) return toast("This browser can't record audio.", true);
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { return toast("Microphone access was refused.", true); }
+  const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
+  const mime = types.find(t => MediaRecorder.isTypeSupported(t)) || "";
+  rec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 24000 } : undefined);
+  recChunks = []; recStart = Date.now();
+  rec.ondataavailable = e => { if (e.data && e.data.size) recChunks.push(e.data); };
+  rec.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop());
+    btn.classList.remove("rec"); btn.innerHTML = ICON.mic; clearInterval(recTimer);
+    const dur = Math.round((Date.now() - recStart) / 1000);
+    const blob = new Blob(recChunks, { type: mime || "audio/webm" });
+    rec = null;
+    if (dur < 1) return toast("Too short.");
+    if (blob.size > 170000) return toast("That note is too long to store. Keep voice notes under about 30 seconds.", true);
+    const b64 = await blobToB64(blob);
+    const mid = "m" + uid();
+    try {
+      await S.db.doc("media/" + mid).set({ b64, mime: blob.type, dur, ts: nowIso() });
+      await S.db.doc("messages/" + mid).set({
+        kind: "voice", uid: S.me.id || "anon", ts: nowIso(), text: "", reactions: {}, dur,
+        room: S.chan.type === "room" ? S.chan.id : null, dm: S.chan.type === "dm" ? S.chan.id : null,
+        replyTo: S.reply || null, media: mid
+      });
+      cancelReply();
+    } catch (e) { toast("Couldn't send the voice note.", true); }
+  };
+  rec.start();
+  btn.classList.add("rec");
+  recTimer = setInterval(() => {
+    const s = Math.round((Date.now() - recStart) / 1000);
+    btn.textContent = String(s);
+    if (s >= 30) rec.stop();
+  }, 250);
+  toast("Recording — tap again to send. Stops at 30 seconds.");
+}
+function blobToB64(b) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = rej; r.readAsDataURL(b); }); }
+const audioCache = {};
+function renderVoice(m) {
+  const box = el("div", { class: "voice" });
+  const btn = el("button", { html: ICON.play, "aria-label": "Play voice note" });
+  const wave = el("div", { class: "wave" });
+  for (let i = 0; i < 26; i++) { const h = 18 + 72 * Math.abs(Math.sin((i + (m.id.charCodeAt(2) % 7)) * 1.1)); wave.appendChild(el("i", { style: "height:" + h + "%" })); }
+  const dur = el("span", { class: "dur", text: (m.dur || 0) + "s" });
+  let audio = null;
+  btn.addEventListener("click", async () => {
+    if (audio && !audio.paused) { audio.pause(); btn.innerHTML = ICON.play; return; }
+    if (!audio) {
+      btn.textContent = "…";
+      try {
+        let d = audioCache[m.media];
+        if (!d) { const snap = await S.db.doc("media/" + m.media).get(); if (!snap.exists) throw new Error("gone"); d = snap.data(); audioCache[m.media] = d; }
+        audio = new Audio("data:" + (d.mime || "audio/webm") + ";base64," + d.b64);
+        audio.onended = () => { btn.innerHTML = ICON.play; };
+      } catch (e) { btn.innerHTML = ICON.play; return toast("That voice note is no longer stored.", true); }
+    }
+    audio.play(); btn.innerHTML = ICON.pause;
+  });
+  box.appendChild(btn); box.appendChild(wave); box.appendChild(dur);
+  return box;
+}
+
+/* ---------- channel management ---------- */
+function addRoom() {
+  openModal("New room", (body, close) => {
+    const nm = el("input", { type: "text", placeholder: "Team B" });
+    const ds = el("input", { type: "text", placeholder: "What it's for" });
+    body.appendChild(el("label", { class: "fld" }, [el("span", { text: "Name" }), nm]));
+    body.appendChild(el("label", { class: "fld" }, [el("span", { text: "Description" }), ds]));
+    body.appendChild(el("div", { style: "display:flex;gap:8px;justify-content:flex-end" }, [
+      el("button", { class: "btn", text: "Cancel", onclick: close }),
+      el("button", { class: "btn primary", text: "Create room", onclick: async () => {
+        const name = nm.value.trim(); if (!name) return;
+        const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || ("r" + uid());
+        const rooms = (S.rooms || []).concat([{ id, name, desc: ds.value.trim() }]);
+        try { await S.db.doc("meta/config").update({ rooms }); close(); S.chan = { type: "room", id }; renderChat(true); }
+        catch (e) { toast("Only admins can add rooms.", true); }
+      } })
+    ]));
+  });
+}
+function newDM() {
+  openModal("Start a direct message", (body, close) => {
+    const q = el("input", { type: "search", placeholder: "Search people in your organisation" });
+    const out = el("div", { style: "margin-top:10px" });
+    const paint = rows => {
+      out.innerHTML = "";
+      if (!rows.length) { out.appendChild(el("div", { class: "muted", style: "font-size:.85rem", text: "No one matched. Names come from your organisation's directory." })); return; }
+      rows.forEach(p => out.appendChild(el("button", { class: "chan", onclick: () => {
+        const id = dmKey(S.me.id, p.id);
+        const cur = LS.get("dms", []); if (!cur.find(x => x.id === id)) { cur.push({ id, other: p.id, ts: Date.now() }); LS.set("dms", cur); }
+        S.profileCache[p.id] = p;
+        S.chan = { type: "dm", id }; close(); renderChat(true); renderChatSidebars();
+      } }, [el("img", { class: "avatar", src: p.avatarUrl, alt: "" }), el("span", { class: "nm", text: p.name || "Someone" })])));
+    };
+    q.addEventListener("input", async () => { if (!S.user || !S.user.search) return; paint(await S.user.search(q.value)); });
+    q.addEventListener("focus", async () => { if (!S.user || !S.user.search) return; paint(await S.user.search("")); });
+    body.appendChild(q); body.appendChild(out);
+    if (!S.user) body.appendChild(el("div", { class: "muted", style: "font-size:.85rem;margin-top:8px", text: "Directory lookup isn't available in this view." }));
+    setTimeout(() => q.focus(), 60);
+  });
+}
+
+/* ============================================================
+   Views
+   ============================================================ */
+function head(title, lede) {
+  return el("div", { class: "viewhead" }, [el("h1", { text: title }), lede ? el("p", { class: "lede", text: lede }) : null]);
+}
+function gaugeState(g) {
+  if (g.level >= g.danger) return "danger";
+  if (g.level >= g.warn) return "warning";
+  if (g.level >= g.warn * 0.82) return "watch";
+  return "normal";
+}
+function viewDashboard() {
+  const v = el("div");
+  v.appendChild(head("City status", "Live picture of Meridian's channels, the alerts in force, and who needs help right now."));
+  const w = el("div", { class: "wrap" });
+  const lvl = S.config.level || "normal", L = LEVELS[lvl] || LEVELS.normal;
+  w.appendChild(el("div", { class: "levelbanner lb-" + lvl }, [
+    el("svg", { class: "dial", viewBox: "0 0 44 44", html: '<circle cx="22" cy="22" r="19" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="3"/><circle cx="22" cy="22" r="19" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + ({ normal: 30, watch: 60, warning: 90, evacuate: 119 }[lvl] || 30) + ' 200" transform="rotate(-90 22 22)"/><circle cx="22" cy="22" r="4" fill="currentColor"/>' }),
+    el("div", {}, [el("h2", { text: "District status: " + L.t }), el("p", { text: L.d })])
+  ]));
+
+  const board = el("div", { class: "board" });
+  board.appendChild(el("div", { class: "bhead" }, [el("h2", { text: "River stage board" }), el("span", { class: "when", text: S.mapcfg.updatedAt ? "updated " + fmtWhen(S.mapcfg.updatedAt) : "" })]));
+  const gg = el("div", { class: "gauges" });
+  (S.gauges || []).forEach(g => {
+    const st = gaugeState(g), pct = Math.min(100, (g.level / (g.danger * 1.15)) * 100), dpct = Math.min(100, (g.danger / (g.danger * 1.15)) * 100);
+    const delta = g.level - (g.prev != null ? g.prev : g.level);
+    gg.appendChild(el("div", { class: "gauge g-" + st }, [
+      el("div", { class: "nm", text: g.name }),
+      el("div", { class: "val" }, [el("span", { text: Number(g.level).toFixed(g.unit === "mm" ? 0 : 2) }), el("small", { text: g.unit || "m" })]),
+      el("div", { class: "trend", style: "color:" + (delta > 0.05 ? "#F0946A" : delta < -0.05 ? "#5FC0A0" : "#7FA5AF"), text: (delta > 0 ? "▲ +" : delta < 0 ? "▼ " : "— ") + (delta === 0 ? "steady" : delta.toFixed(g.unit === "mm" ? 0 : 2) + " since last reading") }),
+      el("div", { class: "bar" }, [el("i", { style: "width:" + pct + "%" }), el("span", { class: "danger", style: "left:" + dpct + "%" })]),
+      el("div", { class: "lv", text: "warn " + g.warn + " · danger " + g.danger })
+    ]));
+  });
+  board.appendChild(gg);
+  w.appendChild(board);
+
+  const sos = activeSOS(), openReports = S.reports.filter(r => r.status === "open");
+  const beds = S.shelters.reduce((a, s) => a + (s.capacity || 0) - (s.occupancy || 0), 0);
+  const strip = el("div", { class: "statusstrip" }, [
+    el("div", { class: "stat" + (sos.length ? " alarm" : "") }, [el("div", { class: "k", text: "Open SOS calls" }), el("div", { class: "v", text: String(sos.length) }), el("div", { class: "s", text: sos.length ? "responders needed" : "nothing outstanding" })]),
+    el("div", { class: "stat" }, [el("div", { class: "k", text: "Reports to triage" }), el("div", { class: "v", text: String(openReports.length) }), el("div", { class: "s", text: S.reports.length + " filed in total" })]),
+    el("div", { class: "stat" }, [el("div", { class: "k", text: "Shelter places free" }), el("div", { class: "v", text: String(Math.max(0, beds)) }), el("div", { class: "s", text: S.shelters.filter(s => s.status === "open").length + " of " + S.shelters.length + " shelters open" })]),
+    el("div", { class: "stat" }, [el("div", { class: "k", text: "People online" }), el("div", { class: "v", text: String(S.peers.length || 1) }), el("div", { class: "s", text: "in the response group" })]),
+  ]);
+  w.appendChild(strip);
+
+  const s1 = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "Latest alerts" }), el("span", { class: "hint", text: "issued by the control room" })])]);
+  const p1 = el("div", { class: "panel rowlist" });
+  const top = S.alerts.slice(0, 3);
+  if (!top.length) p1.appendChild(el("div", { class: "empty" }, [el("b", { text: "No alerts in force" }), el("span", { text: "The city is quiet." })]));
+  top.forEach(a => p1.appendChild(alertRow(a)));
+  if (S.alerts.length > 3) p1.appendChild(el("div", { class: "row" }, [el("button", { class: "btn ghost sm", text: "See all " + S.alerts.length + " alerts", onclick: () => go("alerts") })]));
+  s1.appendChild(p1); w.appendChild(s1);
+
+  if (sos.length) {
+    const s2 = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "Open SOS calls" })])]);
+    const p2 = el("div", { class: "panel pad" });
+    sos.forEach(m => p2.appendChild(renderSOSCard(m)));
+    s2.appendChild(p2); w.appendChild(s2);
+  }
+  const s3 = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "If you need help now" })])]);
+  s3.appendChild(el("div", { class: "panel pad" }, [
+    el("p", { class: "muted", style: "font-size:.9rem", text: "An SOS pins itself to the top of everyone's screen until a responder closes it. Use it for danger to life — for a blocked road or a rising drain, file a report instead." }),
+    el("div", { style: "display:flex;gap:8px;flex-wrap:wrap" }, [
+      el("button", { class: "btn danger", text: "Send an SOS", onclick: () => { go("chat"); setTimeout(sendSOS, 80); } }),
+      el("button", { class: "btn", text: "File a report", onclick: () => go("report") }),
+      el("button", { class: "btn", text: "Find a shelter", onclick: () => go("shelters") })
+    ])
+  ]));
+  w.appendChild(s3);
+  v.appendChild(w);
+  return v;
+}
+function alertRow(a) {
+  return el("div", { class: "row" }, [
+    el("div", { class: "grow alertrow l-" + a.level }, [
+      el("div", { style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:3px" }, [
+        el("span", { class: "chip c-" + a.level, text: a.level }),
+        el("span", { class: "meta", text: fmtWhen(a.ts) + " · " + nameOf(a.by) })
+      ]),
+      el("h3", { text: a.title }),
+      el("div", { class: "meta", style: "color:var(--ink-2);margin-top:3px", text: a.body }),
+      (a.zones && a.zones.length) ? el("div", { style: "margin-top:7px;display:flex;gap:5px;flex-wrap:wrap" }, a.zones.map(z => el("span", { class: "tag", text: z }))) : null
+    ]),
+    S.isAdmin ? el("div", { class: "side" }, [el("button", { class: "btn ghost sm", text: "Delete", onclick: async () => { if (await confirmish("Delete this alert?", "It disappears for everyone.", "Delete", true)) S.db.doc("alerts/" + a.id).delete(); } })]) : null
+  ]);
+}
+
+/* ---------- map ---------- */
+function ll2xy(lat, lng) {
+  const c = S.mapcfg;
+  const x = ((lng - c.west) / (c.east - c.west)) * 260;
+  const y = ((c.north - lat) / (c.north - c.south)) * 210;
+  return { x, y, inside: x >= -6 && x <= 266 && y >= -6 && y <= 216 };
+}
+function viewMap() {
+  const v = el("div");
+  v.appendChild(head("City map", "Zones coloured by current risk, with shelters, open SOS calls and citizen reports plotted where they were sent from."));
+  const w = el("div", { class: "wrap" });
+  const info = el("div", { class: "mapinfo", text: "Tap a zone, shelter or marker for detail." });
+  const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  s.setAttribute("viewBox", "0 0 260 210");
+  s.setAttribute("role", "img");
+  s.setAttribute("aria-label", "Schematic map of the Meridian response area");
+  const ns = "http://www.w3.org/2000/svg";
+  const mk = (t, at) => { const n = document.createElementNS(ns, t); for (const k in at) n.setAttribute(k, at[k]); return n; };
+  s.appendChild(mk("rect", { x: 0, y: 0, width: 260, height: 210, fill: "var(--surface-2)" }));
+  (S.mapcfg.zones || DEFAULT_ZONES).forEach(z => {
+    const p = mk("polygon", { points: z.pts, fill: RISK_FILL[z.risk] || "var(--grass)", "fill-opacity": ".22", stroke: RISK_FILL[z.risk] || "var(--grass)", "stroke-width": ".8", class: "zone" });
+    p.addEventListener("click", () => {
+      const sh = S.shelters.filter(x => x.zone === z.name);
+      info.innerHTML = "";
+      info.appendChild(el("b", { text: z.name })); info.appendChild(el("span", { text: " — " + (LEVELS[z.risk] ? LEVELS[z.risk].t.toLowerCase() : z.risk) + " risk. " }));
+      info.appendChild(el("span", { class: "muted", text: sh.length ? sh.length + " shelter" + (sh.length > 1 ? "s" : "") + ": " + sh.map(x => x.name).join("; ") : "No shelter listed in this zone." }));
+    });
+    s.appendChild(p);
+    s.appendChild(mk("text", { x: z.lx, y: z.ly, class: "zlabel", "text-anchor": "middle" })).textContent = z.name;
+  });
+  const riv = mk("polyline", { points: S.mapcfg.river || DEFAULT_MAP.river, class: "riverline", "stroke-width": "4", "stroke-opacity": ".85" });
+  s.appendChild(riv);
+  const rivText = mk("text", { x: 20, y: 66, class: "zlabel", "fill-opacity": ".7" }); rivText.textContent = "Meridian Channel"; s.appendChild(rivText);
+  S.shelters.forEach(sh => {
+    const g = mk("g", { class: "zone" });
+    g.appendChild(mk("rect", { x: sh.x - 4.5, y: sh.y - 4.5, width: 9, height: 9, rx: 2, fill: sh.status === "open" ? "var(--hydro)" : "var(--ink-3)", stroke: "var(--surface)", "stroke-width": "1.2" }));
+    g.addEventListener("click", () => {
+      info.innerHTML = "";
+      info.appendChild(el("b", { text: sh.name }));
+      info.appendChild(el("div", { class: "muted", text: sh.zone + " · " + (sh.capacity - sh.occupancy) + " places free of " + sh.capacity + " · " + sh.status }));
+    });
+    s.appendChild(g);
+  });
+  S.reports.filter(r => r.status !== "closed" && r.lat != null).forEach(r => {
+    const p = ll2xy(r.lat, r.lng); if (!p.inside) return;
+    const g = mk("g", { class: "zone" });
+    g.appendChild(mk("circle", { cx: p.x, cy: p.y, r: 3.2, fill: "var(--silt)", stroke: "var(--surface)", "stroke-width": "1" }));
+    g.addEventListener("click", () => { info.innerHTML = ""; info.appendChild(el("b", { text: r.type })); info.appendChild(el("div", { class: "muted", text: (r.note || "") + " — " + fmtWhen(r.ts) })); });
+    s.appendChild(g);
+  });
+  activeSOS().forEach(m => {
+    if (!m.sos || m.sos.lat == null) return;
+    const p = ll2xy(m.sos.lat, m.sos.lng); if (!p.inside) return;
+    if ((m.sos.track || []).length > 1) {
+      const pts = m.sos.track.map(t => { const q = ll2xy(t.lat, t.lng); return q.x.toFixed(1) + "," + q.y.toFixed(1); }).join(" ");
+      s.appendChild(mk("polyline", { points: pts, fill: "none", stroke: "var(--signal)", "stroke-width": "1.2", "stroke-dasharray": "2 2", "stroke-opacity": ".8" }));
+    }
+    const g = mk("g", { class: "zone" });
+    const halo = mk("circle", { cx: p.x, cy: p.y, r: 8, fill: "var(--signal)", "fill-opacity": ".22" });
+    const an = mk("animate", { attributeName: "r", values: "6;11;6", dur: "2s", repeatCount: "indefinite" });
+    halo.appendChild(an); g.appendChild(halo);
+    g.appendChild(mk("circle", { cx: p.x, cy: p.y, r: 4, fill: "var(--signal)", stroke: "#fff", "stroke-width": "1.2" }));
+    g.addEventListener("click", () => {
+      info.innerHTML = "";
+      info.appendChild(el("b", { text: "SOS — " + m.sos.category }));
+      info.appendChild(el("div", { class: "muted", text: nameOf(m.uid) + " · " + fmtWhen(m.sos.updatedAt || m.ts) + (sosDistance(m) != null ? " · " + fmtDist(sosDistance(m)) : "") }));
+      info.appendChild(el("button", { class: "btn sm", style: "margin-top:8px", text: "Open in chat", onclick: () => { S.chan = m.dm ? { type: "dm", id: m.dm } : { type: "room", id: m.room }; go("chat"); setTimeout(() => scrollToMsg(m.id), 140); } }));
+    });
+    s.appendChild(g);
+    if (S.focusSOS === m.id) { setTimeout(() => g.dispatchEvent(new Event("click")), 60); S.focusSOS = null; }
+  });
+  if (S.geo) {
+    const p = ll2xy(S.geo.lat, S.geo.lng);
+    if (p.inside) { s.appendChild(mk("circle", { cx: p.x, cy: p.y, r: 3.4, fill: "var(--hydro-2)", stroke: "#fff", "stroke-width": "1.4" })); }
+  }
+  const box = el("div", { class: "mapwrap" });
+  box.appendChild(s);
+  box.appendChild(el("div", { class: "maplegend" }, [
+    el("span", {}, [el("i", { class: "swatch", style: "background:var(--grass)" }), el("span", { text: "Normal" })]),
+    el("span", {}, [el("i", { class: "swatch", style: "background:var(--silt)" }), el("span", { text: "Watch" })]),
+    el("span", {}, [el("i", { class: "swatch", style: "background:var(--amber)" }), el("span", { text: "Warning" })]),
+    el("span", {}, [el("i", { class: "swatch", style: "background:var(--signal)" }), el("span", { text: "Danger / SOS" })]),
+    el("span", {}, [el("i", { class: "swatch", style: "background:var(--hydro)" }), el("span", { text: "Shelter" })]),
+    S.geo ? el("span", {}, [el("i", { class: "swatch", style: "background:var(--hydro-2);border-radius:50%" }), el("span", { text: "You" })]) : null
+  ]));
+  box.appendChild(info);
+  w.appendChild(box);
+  if (!S.geo) w.appendChild(el("div", { class: "banner", style: "margin-top:12px" }, [
+    el("span", { text: "Turn on location sharing in Settings to put yourself on this map and see how far away each SOS is. " }),
+    el("button", { class: "btn sm", style: "margin-left:6px", text: "Open settings", onclick: () => go("settings") })
+  ]));
+  v.appendChild(w);
+  return v;
+}
+
+/* ---------- alerts ---------- */
+function viewAlerts() {
+  const v = el("div");
+  v.appendChild(head("Alerts", "Everything the control room has issued, newest first."));
+  const w = el("div", { class: "wrap" });
+  if (S.isAdmin) w.appendChild(el("div", { style: "margin-bottom:12px" }, [el("button", { class: "btn primary", text: "Issue an alert", onclick: composeAlert })]));
+  const p = el("div", { class: "panel rowlist" });
+  if (!S.alerts.length) p.appendChild(el("div", { class: "empty" }, [el("b", { text: "No alerts yet" }), el("span", { text: S.isAdmin ? "Issue the first one above." : "You'll see warnings here as they're issued." })]));
+  S.alerts.forEach(a => p.appendChild(alertRow(a)));
+  w.appendChild(p); v.appendChild(w); return v;
+}
+function composeAlert(existing) {
+  openModal("Issue an alert", (body, close) => {
+    const lvl = el("select", {}, ["advisory", "watch", "warning", "evacuate"].map(x => el("option", { text: x })));
+    const title = el("input", { type: "text", placeholder: "One line people will read on their lock screen" });
+    const text = el("textarea", { placeholder: "What is happening, who it affects, what to do." });
+    const zones = el("input", { type: "text", placeholder: "Thorapadi, Old Town" });
+    body.appendChild(el("label", { class: "fld" }, [el("span", { text: "Severity" }), lvl]));
+    body.appendChild(el("label", { class: "fld" }, [el("span", { text: "Headline" }), title]));
+    body.appendChild(el("label", { class: "fld" }, [el("span", { text: "Detail" }), text]));
+    body.appendChild(el("label", { class: "fld" }, [el("span", { text: "Zones affected, comma separated" }), zones]));
+    body.appendChild(el("div", { style: "display:flex;gap:8px;justify-content:flex-end" }, [
+      el("button", { class: "btn", text: "Cancel", onclick: close }),
+      el("button", { class: "btn primary", text: "Issue alert", onclick: async () => {
+        if (!title.value.trim()) return toast("Give the alert a headline.", true);
+        try {
+          await S.db.doc("alerts/a" + uid()).set({ level: lvl.value, title: title.value.trim(), body: text.value.trim(), zones: zones.value.split(",").map(z => z.trim()).filter(Boolean), ts: nowIso(), by: S.me.id || "control" });
+          close(); toast("Alert issued.");
+        } catch (e) { toast("Only admins can issue alerts.", true); }
+      } })
+    ]));
+  });
+}
+
+/* ---------- shelters ---------- */
+function viewShelters() {
+  const v = el("div");
+  v.appendChild(head("Shelters", "Where to go, how full it is, and who's already checked in."));
+  const w = el("div", { class: "wrap" });
+  if (S.isAdmin) w.appendChild(el("div", { style: "margin-bottom:12px" }, [el("button", { class: "btn primary", text: "Add a shelter", onclick: () => editShelter(null) })]));
+  const mine = S.checkins.find(c => c.id === S.me.id);
+  if (mine) {
+    const sh = S.shelters.find(s => s.id === mine.shelterId);
+    w.appendChild(el("div", { class: "banner", style: "margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap" }, [
+      el("span", { text: "You're checked in at " + (sh ? sh.name : "a shelter") + (mine.people > 1 ? " with " + mine.people + " people" : "") + "." }),
+      el("button", { class: "btn sm", text: "Check out", onclick: async () => { try { await S.db.doc("checkins/" + S.me.id).delete(); toast("Checked out."); } catch (e) { toast("Couldn't check out.", true); } } })
+    ]));
+  }
+  const p = el("div", { class: "panel rowlist" });
+  if (!S.shelters.length) p.appendChild(el("div", { class: "empty" }, [el("b", { text: "No shelters listed" }), el("span", { text: "An admin can add them." })]));
+  S.shelters.slice().sort((a, b) => (a.status === "open" ? 0 : 1) - (b.status === "open" ? 0 : 1)).forEach(s => {
+    const here = S.checkins.filter(c => c.shelterId === s.id).reduce((a, c) => a + (c.people || 1), 0);
+    const occ = Math.max(s.occupancy || 0, here);
+    const pct = s.capacity ? Math.min(100, (occ / s.capacity) * 100) : 0;
+    const full = pct >= 99;
+    const side = el("div", { class: "side" });
+    side.appendChild(el("span", { class: "tag " + (s.status === "open" && !full ? "ok" : full ? "hot" : "") , text: full ? "full" : s.status }));
+    if (s.status === "open" && !full) side.appendChild(el("button", { class: "btn sm", text: mine && mine.shelterId === s.id ? "Checked in" : "Check in", onclick: () => checkIn(s) }));
+    if (S.isAdmin) side.appendChild(el("button", { class: "btn ghost sm", text: "Edit", onclick: () => editShelter(s) }));
+    p.appendChild(el("div", { class: "row" }, [
+      el("div", { class: "grow" }, [
+        el("h3", { text: s.name }),
+        el("div", { class: "meta", text: s.zone + " · " + occ + " of " + s.capacity + " places used · " + (s.contact || "no contact listed") }),
+        el("div", { class: "capbar" + (full ? " full" : "") }, [el("i", { style: "width:" + pct + "%" })]),
+        here ? el("div", { class: "meta", style: "margin-top:5px", text: here + " checked in through MeridianSOS" }) : null
+      ]),
+      side
+    ]));
+  });
+  w.appendChild(p); v.appendChild(w); return v;
+}
+async function checkIn(s) {
+  openModal("Check in at " + s.name, (body, close) => {
+    const n = el("input", { type: "number", min: "1", max: "40", value: "1" });
+    const note = el("input", { type: "text", placeholder: "Anything the warden should know (optional)" });
+    body.appendChild(el("p", { class: "muted", style: "font-size:.86rem", text: "Everyone in the group can see that you've checked in and how many people are with you. Your home address stays private." }));
+    body.appendChild(el("label", { class: "fld" }, [el("span", { text: "How many people, including you" }), n]));
+    body.appendChild(el("label", { class: "fld" }, [el("span", { text: "Note" }), note]));
+    body.appendChild(el("div", { style: "display:flex;gap:8px;justify-content:flex-end" }, [
+      el("button", { class: "btn", text: "Cancel", onclick: close }),
+      el("button", { class: "btn primary", text: "Check in", onclick: async () => {
+        try { await S.db.doc("checkins/" + S.me.id).set({ shelterId: s.id, people: Math.max(1, +n.value || 1), note: note.value.trim(), ts: nowIso() }); close(); toast("Checked in. Stay safe."); }
+        catch (e) { toast("Couldn't check in.", true); }
+      } })
+    ]));
+  });
+}
+function editShelter(s) {
+  openModal(s ? "Edit shelter" : "Add a shelter", (body, close) => {
+    const f = {};
+    const fld = (k, label, type, val) => { f[k] = el("input", { type: type || "text", value: val == null ? "" : val }); body.appendChild(el("label", { class: "fld" }, [el("span", { text: label }), f[k]])); };
+    fld("name", "Name", "text", s && s.name); fld("zone", "Zone", "text", s && s.zone);
+    fld("capacity", "Capacity", "number", s ? s.capacity : 100);
+    fld("occupancy", "People already there", "number", s ? s.occupancy : 0);
+    fld("contact", "Contact", "text", s && s.contact);
+    const st = el("select", {}, ["open", "full", "closed"].map(x => el("option", { text: x, selected: s && s.status === x })));
+    body.appendChild(el("label", { class: "fld" }, [el("span", { text: "Status" }), st]));
+    body.appendChild(el("div", { class: "grid2" }, [
+      el("label", { class: "fld" }, [el("span", { text: "Map x (0–260)" }), f.x = el("input", { type: "number", value: s ? s.x : 130 })]),
+      el("label", { class: "fld" }, [el("span", { text: "Map y (0–210)" }), f.y = el("input", { type: "number", value: s ? s.y : 105 })])
+    ]));
+    body.appendChild(el("div", { style: "display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap" }, [
+      s ? el("button", { class: "btn danger", text: "Delete", onclick: async () => { if (await confirmish("Delete this shelter?", "It comes off the map and the list.", "Delete", true)) { await S.db.doc("shelters/" + s.id).delete(); close(); } } }) : null,
+      el("button", { class: "btn", text: "Cancel", onclick: close }),
+      el("button", { class: "btn primary", text: "Save", onclick: async () => {
+        const id = s ? s.id : "s" + uid();
+        try {
+          await S.db.doc("shelters/" + id).set({
+            name: f.name.value.trim() || "Unnamed shelter", zone: f.zone.value.trim(), capacity: +f.capacity.value || 0,
+            occupancy: +f.occupancy.value || 0, contact: f.contact.value.trim(), status: st.value,
+            x: Math.max(0, Math.min(260, +f.x.value || 130)), y: Math.max(0, Math.min(210, +f.y.value || 105))
+          });
+          close(); toast("Saved.");
+        } catch (e) { toast("Only admins can edit shelters.", true); }
+      } })
+    ]));
+  });
+}
+
+/* ---------- reports ---------- */
+const REPORT_TYPES = ["Water on the road", "Drain overflowing", "Blocked route", "Power line down", "Building damage", "Stranded livestock", "Need supplies"];
+function viewReport() {
+  const v = el("div");
+  v.appendChild(head("Report", "Tell the control room what you can see. Reports are for conditions — if someone is in danger, send an SOS instead."));
+  const w = el("div", { class: "wrap" });
+  const type = el("select", {}, REPORT_TYPES.map(t => el("option", { text: t })));
+  const sev = el("div", { class: "seg" });
+  let severity = "moderate";
+  ["minor", "moderate", "severe"].forEach(x => {
+    const b = el("button", { text: x, onclick: () => { severity = x; Array.from(sev.children).forEach(c => c.setAttribute("aria-pressed", c === b ? "true" : "false")); } });
+    b.setAttribute("aria-pressed", x === severity ? "true" : "false");
+    sev.appendChild(b);
+  });
+  const zone = el("select", {}, [el("option", { text: "" })].concat((S.mapcfg.zones || DEFAULT_ZONES).map(z => el("option", { text: z.name }))));
+  const note = el("textarea", { placeholder: "Roughly how deep, which junction, is it passable on foot." });
+  const loc = el("input", { type: "checkbox", checked: true });
+  const form = el("div", { class: "panel pad" }, [
+    el("div", { class: "grid2" }, [
+      el("label", { class: "fld" }, [el("span", { text: "What are you reporting?" }), type]),
+      el("label", { class: "fld" }, [el("span", { text: "Zone" }), zone])
+    ]),
+    el("label", { class: "fld" }, [el("span", { text: "How bad is it?" }), sev]),
+    el("label", { class: "fld", style: "margin-top:12px" }, [el("span", { text: "Detail" }), note]),
+    el("label", { class: "check" }, [loc, el("span", { class: "lbl", text: "Attach my location so it lands on the map" })]),
+    el("div", { style: "margin-top:12px" }, [el("button", { class: "btn primary", text: "File report", onclick: async (e) => {
+      if (isMuted()) return toast("You're muted in this group.", true);
+      const btn = e.currentTarget; btn.disabled = true;
+      let pos = null;
+      if (loc.checked) { try { pos = await getPosition(); } catch (err) { } }
+      try {
+        await S.db.doc("reports/r" + uid()).set({
+          uid: S.me.id || "anon", type: type.value, severity, zone: zone.value, note: note.value.trim(),
+          lat: pos ? pos.lat : null, lng: pos ? pos.lng : null, ts: nowIso(), status: "open"
+        });
+        note.value = ""; toast("Report filed. Thank you.");
+      } catch (err) { toast("Couldn't file that report.", true); }
+      btn.disabled = false;
+    } })])
+  ]);
+  w.appendChild(form);
+  const sec = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "Recent reports" }), el("span", { class: "hint", text: S.isAdmin ? "you can acknowledge and close these" : "from across the city" })])]);
+  const p = el("div", { class: "panel rowlist" });
+  if (!S.reports.length) p.appendChild(el("div", { class: "empty" }, [el("b", { text: "Nothing reported yet" }), el("span", { text: "Yours would be the first." })]));
+  S.reports.slice(0, 40).forEach(r => {
+    const side = el("div", { class: "side" }, [el("span", { class: "chip c-" + (r.status === "open" ? "open" : r.status === "ack" ? "ack" : "closed"), text: r.status })]);
+    if (S.isAdmin && r.status !== "closed") {
+      if (r.status === "open") side.appendChild(el("button", { class: "btn sm", text: "Acknowledge", onclick: () => S.db.doc("reports/" + r.id).update({ status: "ack" }).catch(() => toast("Couldn't update.", true)) }));
+      side.appendChild(el("button", { class: "btn ghost sm", text: "Close", onclick: () => S.db.doc("reports/" + r.id).update({ status: "closed" }).catch(() => toast("Couldn't update.", true)) }));
+    }
+    p.appendChild(el("div", { class: "row" }, [
+      el("div", { class: "grow" }, [
+        el("h3", { text: r.type + (r.zone ? " — " + r.zone : "") }),
+        el("div", { class: "meta", text: r.severity + " · " + nameOf(r.uid) + " · " + fmtWhen(r.ts) + (r.lat != null ? " · located" : "") }),
+        r.note ? el("div", { style: "font-size:.9rem;margin-top:4px", text: r.note }) : null
+      ]), side
+    ]));
+  });
+  sec.appendChild(p); w.appendChild(sec);
+  v.appendChild(w); return v;
+}
+
+/* ---------- prepare ---------- */
+const CHECKS = [
+  "Charge every phone and power bank tonight",
+  "Documents, cash and medicines in a sealed bag",
+  "Three days of drinking water per person",
+  "Torch and spare batteries, not just a phone light",
+  "Agree one out-of-district contact everyone calls",
+  "Know two routes to your shelter, one on foot",
+  "Move vehicles and livestock to high ground",
+  "Switch off the mains before water reaches sockets",
+  "Photograph rooms and valuables for any later claim",
+];
+function viewPrepare() {
+  const v = el("div");
+  v.appendChild(head("Prepare", "The short version: a bag you can carry, a route you've walked, and a person outside the district who knows your plan."));
+  const w = el("div", { class: "wrap" });
+  const done = LS.get("checks", {});
+  const p = el("div", { class: "panel pad" });
+  p.appendChild(el("h3", { text: "Go-bag checklist", style: "margin-bottom:8px" }));
+  CHECKS.forEach((c, i) => {
+    const cb = el("input", { type: "checkbox", checked: !!done[i] });
+    const row = el("label", { class: "check" + (done[i] ? " done" : "") }, [cb, el("span", { class: "lbl", text: c })]);
+    cb.addEventListener("change", () => { done[i] = cb.checked; LS.set("checks", done); row.classList.toggle("done", cb.checked); });
+    p.appendChild(row);
+  });
+  p.appendChild(el("div", { class: "muted", style: "font-size:.78rem;margin-top:10px", text: "Ticks are saved on this device only." }));
+  w.appendChild(p);
+  const prose = el("div", { class: "panel pad prose", style: "margin-top:14px" });
+  prose.innerHTML = [
+    "<h3>Before the water comes</h3><ul>",
+    "<li>Find out which district you're in on the city map, and which shelter serves it.</li>",
+    "<li>Walk the route to that shelter once in daylight. Note where it dips — that dip floods first.</li>",
+    "<li>Set your address in Settings. Only administrators can see it, and it's what a rescue team works from if you can't speak.</li>",
+    "</ul><h3>When a warning is issued</h3><ul>",
+    "<li>Move upward, not outward. Most drownings happen in vehicles trying to cross moving water.</li>",
+    "<li>Thirty centimetres of moving water floats a small car. Fifteen knocks an adult off their feet.</li>",
+    "<li>Turn off the mains at the board before water reaches any socket.</li>",
+    "<li>Take medicines, documents, a torch and a charged phone. Leave the rest.</li>",
+    "</ul><h3>If you're cut off</h3><ul>",
+    "<li>Send an SOS from this app. It pins to the top of every screen in the group until someone closes it.</li>",
+    "<li>Leave location updating on if your battery allows — responders can follow you if you have to move.</li>",
+    "<li>Go up, and make yourself visible from above. Don't enter a loft you can't get out of.</li>",
+    "</ul><h3>Afterwards</h3><ul>",
+    "<li>Assume floodwater is contaminated. Boil anything you drink until the district says otherwise.</li>",
+    "<li>Photograph damage before you clear it.</li>",
+    "<li>Don't switch power back on until the board and the sockets are dry and checked.</li>",
+    "</ul>"
+  ].join("");
+  w.appendChild(prose);
+  v.appendChild(w); return v;
+}
+
+/* ---------- settings ---------- */
+function viewSettings() {
+  const v = el("div");
+  v.appendChild(head("Settings", "Your details, what you share, and how this device behaves."));
+  const w = el("div", { class: "wrap" });
+
+  const who = el("div", { class: "panel pad" }, [
+    el("div", { style: "display:flex;gap:12px;align-items:center" }, [
+      el("img", { class: "avatar", style: "width:44px;height:44px;flex:0 0 44px", src: S.me.avatarUrl || "", alt: "" }),
+      el("div", {}, [
+        el("h3", { text: S.me.name || "You" }),
+        el("div", { class: "muted", style: "font-size:.84rem", text: S.isAdmin ? "Administrator — you can issue alerts, manage shelters and see resident addresses." : "Citizen — you can report, chat, send an SOS and check in at a shelter." })
+      ])
+    ]),
+    el("div", { class: "muted", style: "font-size:.8rem;margin-top:10px", text: "Your name and photo come from your organisation account. MeridianSOS doesn't store them." })
+  ]);
+  w.appendChild(who);
+
+  /* address, private to admins */
+  const a = S.myAddress || {};
+  const f = {};
+  const sec = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "Your address" }), el("span", { class: "hint", text: "administrators only" })])]);
+  const ap = el("div", { class: "panel pad" });
+  ap.appendChild(el("p", { class: "muted", style: "font-size:.87rem" , text: "This is what a rescue team works from if you can't answer your phone. Other citizens never see it — the server only serves it to administrators." }));
+  const mkf = (k, label, ph, type) => { f[k] = el(type === "area" ? "textarea" : "input", { type: type === "area" ? null : (type || "text"), placeholder: ph, value: a[k] || "" }); if (type === "area") f[k].value = a[k] || ""; ap.appendChild(el("label", { class: "fld" }, [el("span", { text: label }), f[k]])); };
+  mkf("line", "House and street", "12/3 Thottapalayam Main Road");
+  ap.appendChild(el("div", { class: "grid2" }, [
+    el("label", { class: "fld" }, [el("span", { text: "Zone" }), f.zone = el("select", {}, [el("option", { text: "" })].concat((S.mapcfg.zones || DEFAULT_ZONES).map(z => el("option", { text: z.name, selected: a.zone === z.name }))))]),
+    el("label", { class: "fld" }, [el("span", { text: "Phone" }), f.phone = el("input", { type: "tel", value: a.phone || "", placeholder: "for the control room only" })])
+  ]));
+  ap.appendChild(el("div", { class: "grid2" }, [
+    el("label", { class: "fld" }, [el("span", { text: "Landmark" }), f.landmark = el("input", { type: "text", value: a.landmark || "", placeholder: "opposite the water tank" })]),
+    el("label", { class: "fld" }, [el("span", { text: "People in the household" }), f.people = el("input", { type: "number", min: "1", value: a.people || 1 })])
+  ]));
+  f.needs = el("textarea", { placeholder: "Wheelchair user on the ground floor; oxygen concentrator; infant." });
+  f.needs.value = a.needs || "";
+  ap.appendChild(el("label", { class: "fld" }, [el("span", { text: "Anything a rescue team must know" }), f.needs]));
+  ap.appendChild(el("div", { style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap" }, [
+    el("button", { class: "btn primary", text: "Save address", onclick: async () => {
+      if (!S.me.id) return toast("You need a signed-in account to save an address.", true);
+      try {
+        await S.db.doc("addresses/" + S.me.id).set({
+          line: f.line.value.trim(), zone: f.zone.value, phone: f.phone.value.trim(),
+          landmark: f.landmark.value.trim(), people: +f.people.value || 1, needs: f.needs.value.trim(), updatedAt: nowIso()
+        });
+        toast("Address saved. Only administrators can read it.");
+      } catch (e) { toast("Couldn't save your address.", true); }
+    } }),
+    S.myAddress ? el("button", { class: "btn ghost", text: "Delete it", onclick: async () => { if (await confirmish("Delete your address?", "Administrators will no longer have it during a callout.", "Delete", true)) { await S.db.doc("addresses/" + S.me.id).delete(); toast("Deleted."); } } }) : null,
+    S.myAddress ? el("span", { class: "muted", style: "font-size:.8rem", text: "Saved " + fmtWhen(S.myAddress.updatedAt || Date.now()) }) : null
+  ]));
+  sec.appendChild(ap); w.appendChild(sec);
+
+  /* device */
+  const dsec = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "This device" })])]);
+  const dp = el("div", { class: "panel pad" });
+  const share = el("input", { type: "checkbox", checked: LS.get("shareLocation", false) });
+  share.addEventListener("change", async () => {
+    if (share.checked) {
+      try { await getPosition(); LS.set("shareLocation", true); startGeo(); toast("Location on. Distances will appear on SOS cards."); }
+      catch (e) { share.checked = false; toast("Your browser refused location access.", true); }
+    } else { LS.set("shareLocation", false); stopGeo(); rerender(); }
+  });
+  dp.appendChild(el("label", { class: "check" }, [share, el("span", { class: "lbl" }, [el("b", { text: "Use my location" }), el("div", { class: "muted", style: "font-size:.82rem", text: "Stays on this device. It's used to show how far away each SOS is and to attach a position when you send one." })])]));
+  const nt = el("input", { type: "checkbox", checked: S.notify });
+  nt.addEventListener("change", async () => {
+    if (nt.checked) { const ok = await askNotify(); if (!ok) { nt.checked = false; return; } S.notify = true; LS.set("notify", true); toast("Notifications on."); }
+    else { S.notify = false; LS.set("notify", false); }
+  });
+  dp.appendChild(el("label", { class: "check" }, [nt, el("span", { class: "lbl" }, [el("b", { text: "Desktop and phone notifications" }), el("div", { class: "muted", style: "font-size:.82rem", text: "New messages and SOS calls pop up when this tab is in the background. Silent — the tab title flashes instead of playing a sound." })])]));
+  const th = el("div", { class: "seg" });
+  ["auto", "light", "dark"].forEach(t => {
+    const b = el("button", { text: t, onclick: () => { LS.set("theme", t); applyTheme(); Array.from(th.children).forEach(c => c.setAttribute("aria-pressed", c === b ? "true" : "false")); } });
+    b.setAttribute("aria-pressed", LS.get("theme", "auto") === t ? "true" : "false");
+    th.appendChild(b);
+  });
+  dp.appendChild(el("hr", { class: "rule" }));
+  dp.appendChild(el("label", { class: "fld" }, [el("span", { text: "Theme" }), th]));
+  dsec.appendChild(dp); w.appendChild(dsec);
+
+  if (!S.isAdmin) {
+    const asec = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "Claim admin access" })])]);
+    const ap = el("div", { class: "panel pad" });
+    ap.appendChild(el("p", { class: "muted", style: "font-size:.87rem", text: "Whoever is running the server can read the admin code printed in its terminal window. Enter it here once to become an administrator on this device." }));
+    const code = el("input", { type: "text", inputmode: "numeric", placeholder: "code from the terminal", class: "mono", style: "max-width:220px" });
+    ap.appendChild(el("label", { class: "fld" }, [el("span", { text: "Admin code" }), code]));
+    ap.appendChild(el("button", { class: "btn primary", text: "Claim admin access", onclick: async () => { if (await claimAdmin(code.value.trim())) rerender(); } }));
+    asec.appendChild(ap); w.appendChild(asec);
+  }
+
+  v.appendChild(w); return v;
+}
+
+/* ---------- admin ---------- */
+function knownPeople() {
+  const ids = new Set();
+  S.messages.forEach(m => ids.add(m.uid));
+  S.reports.forEach(r => ids.add(r.uid));
+  S.checkins.forEach(c => ids.add(c.id));
+  S.addresses.forEach(a => ids.add(a.id));
+  Object.keys(S.members).forEach(k => ids.add(k));
+  S.peers.forEach(p => p.presence && p.presence.uid && ids.add(p.presence.uid));
+  if (S.me.id) ids.add(S.me.id);
+  return Array.from(ids).filter(x => x && x !== "anon");
+}
+function viewAdmin() {
+  const v = el("div");
+  v.appendChild(head("Control room", "Set the district status, reach everyone at once, and manage who's in the group."));
+  const w = el("div", { class: "wrap" });
+
+  /* status + announcement */
+  const p1 = el("div", { class: "panel pad" });
+  p1.appendChild(el("h3", { text: "District status" }));
+  const seg = el("div", { class: "seg", style: "margin:8px 0 14px" });
+  ["normal", "watch", "warning", "evacuate"].forEach(l => {
+    const b = el("button", { text: LEVELS[l].t, onclick: async () => { try { await S.db.doc("meta/config").update({ level: l, updatedAt: nowIso() }); toast("Status set to " + LEVELS[l].t + "."); } catch (e) { toast("Couldn't set the status.", true); } } });
+    b.setAttribute("aria-pressed", (S.config.level || "normal") === l ? "true" : "false");
+    seg.appendChild(b);
+  });
+  p1.appendChild(seg);
+  const ann = el("textarea", { placeholder: "One banner across the top of everyone's screen. Leave empty to clear it." });
+  ann.value = S.config.announcement || "";
+  p1.appendChild(el("label", { class: "fld" }, [el("span", { text: "Announcement banner" }), ann]));
+  p1.appendChild(el("div", { style: "display:flex;gap:8px" }, [
+    el("button", { class: "btn primary", text: "Post banner", onclick: async () => { try { await S.db.doc("meta/config").update({ announcement: ann.value.trim(), announcedBy: S.me.id, announcedAt: nowIso() }); toast(ann.value.trim() ? "Banner posted." : "Banner cleared."); } catch (e) { toast("Couldn't post that.", true); } } }),
+    el("button", { class: "btn", text: "Clear", onclick: async () => { ann.value = ""; await S.db.doc("meta/config").update({ announcement: "" }); } })
+  ]));
+  w.appendChild(p1);
+
+  /* join code + QR */
+  const p2 = el("div", { class: "panel pad", style: "margin-top:14px" });
+  p2.appendChild(el("h3", { text: "Joining" }));
+  p2.appendChild(el("p", { class: "muted", style: "font-size:.87rem", text: "A join code keeps casual visitors out of the group. It isn't encryption — anyone your organisation has shared this page with can still reach the data — so treat it as a doorbell, not a lock." }));
+  const pinOn = el("input", { type: "checkbox", checked: !!S.config.pinOn });
+  const pin = el("input", { type: "text", value: S.config.pin || "", placeholder: "4–8 digits", class: "mono", maxlength: "8" });
+  p2.appendChild(el("label", { class: "check" }, [pinOn, el("span", { class: "lbl", text: "Ask for a join code" })]));
+  p2.appendChild(el("label", { class: "fld", style: "margin-top:10px;max-width:220px" }, [el("span", { text: "Current code" }), pin]));
+  p2.appendChild(el("div", { style: "display:flex;gap:8px;flex-wrap:wrap" }, [
+    el("button", { class: "btn primary", text: "Save code", onclick: async () => { try { await S.db.doc("meta/config").update({ pinOn: pinOn.checked, pin: pin.value.trim() }); LS.set("pinOk", pin.value.trim()); toast("Saved."); } catch (e) { toast("Couldn't save.", true); } } }),
+    el("button", { class: "btn", text: "Generate a new one", onclick: () => { pin.value = String(Math.floor(1000 + Math.random() * 8999)); } }),
+    el("button", { class: "btn", text: "Show joining screen", onclick: showJoinScreen })
+  ]));
+  w.appendChild(p2);
+
+  /* people */
+  const sec3 = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "People" }), el("span", { class: "hint", text: knownPeople().length + " seen in this group" })])]);
+  const p3 = el("div", { class: "panel rowlist" });
+  const onlineIds = new Set(S.peers.map(p => p.presence && p.presence.uid));
+  knownPeople().forEach(id => {
+    const m = S.members[id] || {};
+    const addr = S.addresses.find(x => x.id === id);
+    const side = el("div", { class: "side" });
+    if (id !== S.me.id) {
+      side.appendChild(el("button", { class: "btn sm", text: m.muted ? "Unmute" : "Mute", onclick: () => setMember(id, { muted: !m.muted }) }));
+      side.appendChild(el("button", { class: "btn ghost sm", text: m.removed ? "Restore" : "Remove", onclick: async () => {
+        if (!m.removed && !(await confirmish("Remove this person?", "They lose access to the group until you restore them.", "Remove", true))) return;
+        setMember(id, { removed: !m.removed });
+      } }));
+      side.appendChild(el("button", { class: "btn ghost sm", text: m.admin ? "Unmark admin" : "Mark as admin", onclick: () => setMember(id, { admin: !m.admin }) }));
+    }
+    p3.appendChild(el("div", { class: "row" }, [
+      el("img", { class: "avatar", src: avatarOf(id) || "", alt: "" }),
+      el("div", { class: "grow" }, [
+        el("h3", {}, [el("span", { text: id === S.me.id ? (S.me.name || "You") + " (you)" : nameOf(id) }), m.admin ? el("span", { class: "chip c-advisory", style: "margin-left:7px", text: "admin" }) : null]),
+        el("div", { class: "meta", text: [onlineIds.has(id) ? "online" : "offline", m.muted ? "muted" : null, m.removed ? "removed" : null, addr ? "address on file" : "no address"].filter(Boolean).join(" · ") })
+      ]),
+      side
+    ]));
+  });
+  sec3.appendChild(p3); w.appendChild(sec3);
+
+  /* addresses */
+  const sec4 = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "Resident addresses" }), el("span", { class: "hint", text: "served only to editors of this page" })])]);
+  const p4 = el("div", { class: "panel rowlist" });
+  if (!S.addresses.length) p4.appendChild(el("div", { class: "empty" }, [el("b", { text: "No addresses on file" }), el("span", { text: "Residents add theirs in Settings. If you were marked admin in the list above but aren't an editor of this page, the server won't serve them to you." })]));
+  S.addresses.slice().sort((a, b) => (a.zone || "").localeCompare(b.zone || "")).forEach(a => {
+    p4.appendChild(el("div", { class: "row" }, [
+      el("div", { class: "grow" }, [
+        el("h3", { text: nameOf(a.id) }),
+        el("div", { class: "meta", text: [a.line, a.landmark, a.zone].filter(Boolean).join(" · ") }),
+        el("div", { class: "meta", text: (a.people || 1) + " in household" + (a.phone ? " · " + a.phone : "") }),
+        a.needs ? el("div", { style: "font-size:.88rem;margin-top:4px;color:var(--signal)", text: a.needs }) : null
+      ]),
+      el("div", { class: "side" }, [
+        el("button", { class: "btn sm", text: "Message", onclick: () => { const k = dmKey(S.me.id, a.id); const cur = LS.get("dms", []); if (!cur.find(x => x.id === k)) { cur.push({ id: k, other: a.id, ts: Date.now() }); LS.set("dms", cur); } S.chan = { type: "dm", id: k }; go("chat"); } })
+      ])
+    ]));
+  });
+  sec4.appendChild(p4); w.appendChild(sec4);
+
+  /* gauges */
+  const sec5 = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "Gauge readings" }), el("span", { class: "hint", text: "what the stage board shows" })])]);
+  const p5 = el("div", { class: "panel pad" });
+  (S.gauges || []).forEach((g, i) => {
+    const lv = el("input", { type: "number", step: "0.1", value: g.level, style: "max-width:110px" });
+    p5.appendChild(el("div", { style: "display:flex;gap:10px;align-items:center;padding:7px 0;border-top:" + (i ? "1px solid var(--line)" : "0") }, [
+      el("div", { style: "flex:1;min-width:0" }, [el("div", { text: g.name, style: "font-size:.92rem" }), el("div", { class: "meta muted", style: "font-size:.78rem", text: "warn " + g.warn + " · danger " + g.danger + " " + g.unit })]),
+      lv,
+      el("button", { class: "btn sm", text: "Update", onclick: async () => {
+        const gs = S.gauges.map(x => x.id === g.id ? Object.assign({}, x, { prev: x.level, level: +lv.value }) : x);
+        try { await S.db.doc("meta/map").update({ gauges: gs, updatedAt: nowIso() }); toast("Reading updated."); } catch (e) { toast("Couldn't update.", true); }
+      } })
+    ]));
+  });
+  sec5.appendChild(p5); w.appendChild(sec5);
+
+  /* zone risk */
+  const sec6 = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "Zone risk" })])]);
+  const p6 = el("div", { class: "panel pad" });
+  (S.mapcfg.zones || DEFAULT_ZONES).forEach((z, i) => {
+    const seg = el("div", { class: "seg" });
+    ["normal", "watch", "warning", "danger"].forEach(r => {
+      const b = el("button", { text: r, onclick: async () => {
+        const zs = (S.mapcfg.zones || DEFAULT_ZONES).map(x => x.id === z.id ? Object.assign({}, x, { risk: r }) : x);
+        try { await S.db.doc("meta/map").update({ zones: zs, updatedAt: nowIso() }); } catch (e) { toast("Couldn't update.", true); }
+      } });
+      b.setAttribute("aria-pressed", z.risk === r ? "true" : "false");
+      seg.appendChild(b);
+    });
+    p6.appendChild(el("div", { style: "display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:7px 0;border-top:" + (i ? "1px solid var(--line)" : "0") }, [el("span", { text: z.name }), seg]));
+  });
+  sec6.appendChild(p6); w.appendChild(sec6);
+
+  /* housekeeping */
+  const sec7 = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "Housekeeping" })])]);
+  sec7.appendChild(el("div", { class: "panel pad" }, [
+    el("p", { class: "muted", style: "font-size:.87rem", text: "The shared store holds a few thousand documents. Pruning deletes the oldest chat messages and their voice notes; alerts, reports, shelters and addresses are untouched." }),
+    el("div", { style: "display:flex;gap:8px;flex-wrap:wrap" }, [
+      el("button", { class: "btn", text: "Prune chat to the last 150 messages", onclick: pruneMessages }),
+      el("button", { class: "btn ghost", text: "Clear resolved SOS cards", onclick: clearResolvedSOS })
+    ])
+  ]));
+  w.appendChild(sec7);
+  v.appendChild(w); return v;
+}
+async function setMember(id, patch) {
+  const cur = S.members[id] || {};
+  const next = Object.assign({}, cur, patch, { updatedAt: nowIso() });
+  delete next.id;
+  try { await S.db.doc("members/" + id).set(next); }
+  catch (e) { toast("Couldn't update that person.", true); }
+}
+async function pruneMessages() {
+  if (!(await confirmish("Prune old messages?", "Everything older than the newest 150 messages is deleted for everyone.", "Prune", true))) return;
+  try {
+    const snap = await S.db.collection("messages").orderBy("ts", "desc").limit(1000).get();
+    const docs = snap.docs.slice(150);
+    for (const d of docs) {
+      const m = d.data();
+      if (m && m.media) { try { await S.db.doc("media/" + m.media).delete(); } catch (e) { } }
+      try { await S.db.doc("messages/" + d.id).delete(); } catch (e) { }
+    }
+    toast("Pruned " + docs.length + " messages.");
+  } catch (e) { toast("Couldn't prune right now.", true); }
+}
+async function clearResolvedSOS() {
+  if (!(await confirmish("Clear resolved SOS cards?", "Resolved calls are deleted from the chat history.", "Clear", true))) return;
+  const done = S.messages.filter(m => m.kind === "sos" && m.sos && m.sos.status === "resolved");
+  for (const m of done) { try { await S.db.doc("messages/" + m.id).delete(); } catch (e) { } }
+  toast("Cleared " + done.length + ".");
+}
+function showJoinScreen() {
+  openModal("Joining screen", (body) => {
+    body.appendChild(el("p", { class: "muted", style: "font-size:.88rem", text: "Put this on the control-room display. People scan the code to open MeridianSOS, then type the join code." }));
+    const qr = el("div", { id: "qrbox" });
+    body.appendChild(qr);
+    const url = location.href.split("#")[0];
+    if (window.QRCode) { try { new QRCode(qr, { text: url, width: 208, height: 208, correctLevel: QRCode.CorrectLevel.M }); } catch (e) { qr.textContent = "Couldn't draw the code."; } }
+    else qr.appendChild(el("div", { class: "muted", style: "font-size:.85rem;padding:10px;text-align:center", text: "The QR library didn't load. Share the link below instead." }));
+    body.appendChild(el("div", { style: "margin-top:12px" }, [
+      el("div", { class: "muted", style: "font-size:.8rem", text: "Link" }),
+      el("div", { class: "mono", style: "font-size:.78rem;word-break:break-all", text: url }),
+      el("button", { class: "btn sm", style: "margin-top:8px", text: "Copy link", onclick: () => { navigator.clipboard.writeText(url).then(() => toast("Link copied."), () => toast("Copy failed.", true)); } })
+    ]));
+    if (S.config.pinOn && S.config.pin) body.appendChild(el("div", { style: "margin-top:14px;text-align:center" }, [
+      el("div", { class: "muted", style: "font-size:.8rem", text: "Join code" }),
+      el("div", { class: "mono", style: "font-size:2.2rem;letter-spacing:.3em", text: S.config.pin })
+    ]));
+  });
+}
+
+/* ============================================================
+   Render
+   ============================================================ */
+let rerenderQueued = false;
+function rerender() {
+  if (rerenderQueued) return;
+  rerenderQueued = true;
+  requestAnimationFrame(() => { rerenderQueued = false; if (S.ready) { render(); buildNav(); renderPinBar(); } });
+}
+function render() {
+  const host = $("#main");
+  const prevScroll = $("#view") ? $("#view").scrollTop : 0;
+  const sameView = host.dataset.view === S.view;
+  host.innerHTML = "";
+  host.dataset.view = S.view;
+  if (S.view === "chat") {
+    const c = viewChat();
+    host.appendChild(c);
+    renderChat(true);
+    markChannelRead();
+  } else {
+    const v = el("div", { class: "view", id: "view" });
+    let inner;
+    switch (S.view) {
+      case "map": inner = viewMap(); break;
+      case "alerts": inner = viewAlerts(); break;
+      case "shelters": inner = viewShelters(); break;
+      case "report": inner = viewReport(); break;
+      case "prepare": inner = viewPrepare(); break;
+      case "settings": inner = viewSettings(); break;
+      case "admin": inner = S.isAdmin ? viewAdmin() : viewDashboard(); break;
+      default: inner = viewDashboard();
+    }
+    v.appendChild(inner);
+    host.appendChild(v);
+    if (sameView) v.scrollTop = prevScroll;
+  }
+  buildNav();
+  renderPinBar();
+  pushPresence();
+}
+
+/* keep admin status in step with the members roster */
+function recomputeAdmin() {
+  const was = S.isAdmin;
+  const flagged = !!(S.me.id && S.members[S.me.id] && S.members[S.me.id].admin);
+  S.isAdmin = !!(S.baseAdmin || flagged);
+  $("#merole").textContent = S.isAdmin ? "Administrator" : "Citizen";
+  if (was !== S.isAdmin) { buildNav(); rerender(); }
+}
+
+/* ============================================================
+   Start
+   ============================================================ */
+window.addEventListener("resize", () => { if (S.view === "chat") renderChatHead(); });
+window.addEventListener("beforeunload", () => { if (S.sosWatch != null) stopSOSTracking(); });
+
+(async function start() {
+  render();
+  try { await boot(); } catch (e) { console.error(e); toast("Something went wrong starting up.", true); }
+})();
+
+</script>
+
+<script>
+window.onMeridianStatus = (function () {
+  let el = null, shown = null;
+  return function (st) {
+    const bad = !st.online || st.storage === "none";
+    const key = st.online + "|" + st.storage;
+    if (key === shown) return;
+    shown = key;
+    if (!bad) { if (el) { el.remove(); el = null; } return; }
+    if (!el) {
+      el = document.createElement("div");
+      el.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:99999;"
+        + "background:#9e1f3d;color:#fff;font:600 12px/1.45 system-ui,sans-serif;"
+        + "padding:8px 14px;text-align:center;letter-spacing:.01em";
+      document.body.appendChild(el);
+    }
+    el.textContent = !st.online
+      ? "Reconnecting to MeridianSOS\u2026"
+      : "Shared storage is not connected \u2014 this browser is running single-user. "
+        + "Connect a Vercel Blob store and redeploy to enable multi-device sync.";
+  };
+})();
+</script>
+</body>
+</html>

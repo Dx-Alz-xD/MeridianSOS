@@ -461,12 +461,32 @@ class Stream {
           window.onMeridianStatus({ online: true, storage: m.storage, rev: this.rev });
       } catch (e) {
         this.online = false;
+        this._fails = (this._fails || 0) + 1;
+        /* No API at all (static hosting): stop hammering a 404 and render the
+           seed snapshot read-only instead of showing an endless reconnect. */
+        if (this._fails >= 3 && !this._static) {
+          if (await this._goStatic()) return;
+        }
         if (typeof window.onMeridianStatus === "function")
           window.onMeridianStatus({ online: false, storage: this.storage, rev: this.rev });
         await new Promise(s => setTimeout(s, backoff));
         backoff = Math.min(backoff * 2, 15000);
       }
     }
+  }
+  async _goStatic() {
+    try {
+      const r = await fetch("./seed.json", { cache: "no-store" });
+      if (!r.ok) return false;
+      const store = await r.json();
+      this._static = true;
+      this._stopped = true;
+      this.storage = "static";
+      this._apply({ store, peers: [], rev: 1 }, true);
+      if (typeof window.onMeridianStatus === "function")
+        window.onMeridianStatus({ online: true, storage: "static", rev: 1 });
+      return true;
+    } catch (e) { return false; }
   }
   _apply(m, first) {
     const store = m.store || {};
@@ -2443,7 +2463,7 @@ window.addEventListener("beforeunload", () => { if (S.sosWatch != null) stopSOST
 window.onMeridianStatus = (function () {
   let el = null, shown = null;
   return function (st) {
-    const bad = !st.online || st.storage === "none";
+    const bad = !st.online || st.storage === "none" || st.storage === "static";
     const key = st.online + "|" + st.storage;
     if (key === shown) return;
     shown = key;
@@ -2451,12 +2471,17 @@ window.onMeridianStatus = (function () {
     if (!el) {
       el = document.createElement("div");
       el.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:99999;"
-        + "background:#9e1f3d;color:#fff;font:600 12px/1.45 system-ui,sans-serif;"
+        + "background:var(--sos-banner,#9e1f3d);color:#fff;font:600 12px/1.45 system-ui,sans-serif;"
         + "padding:8px 14px;text-align:center;letter-spacing:.01em";
       document.body.appendChild(el);
     }
+    el.style.setProperty("--sos-banner", st.storage === "static" ? "#0a6fa8" : "#9e1f3d");
     el.textContent = !st.online
       ? "Reconnecting to MeridianSOS\u2026"
+      : st.storage === "static"
+      ? "Read-only demo \u2014 served as static files, so there is no backend. "
+        + "Zones, gauges, shelters and alerts are the real Meridian model output; "
+        + "check-ins and messaging need the deployed API."
       : "Shared storage is not connected \u2014 this browser is running single-user. "
         + "Connect a Vercel Blob store and redeploy to enable multi-device sync.";
   };

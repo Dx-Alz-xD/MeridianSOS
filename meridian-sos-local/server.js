@@ -1,0 +1,309 @@
+#!/usr/bin/env node
+/* ============================================================
+   MeridianSOS — local network server
+   Zero dependencies. Node's built-in http(s)/fs/os/crypto only.
+   Run:  node server.js
+   Then open the printed address on any device on the same WiFi.
+   ============================================================ */
+"use strict";
+const http = require("http");
+const https = require("https");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const crypto = require("crypto");
+
+const PORT = process.env.PORT || 8787;
+const HTTPS_PORT = process.env.HTTPS_PORT || 8788;
+const DATA_FILE = path.join(__dirname, "meridian-data.json");
+const INDEX_FILE = path.join(__dirname, "public", "index.html");
+const CERT_FILE = path.join(__dirname, "cert.pem");
+const KEY_FILE = path.join(__dirname, "key.pem");
+
+/* ---------------- persisted store: flat map of "collection/id" -> doc ---------------- */
+let store = {};
+let saveTimer = null;
+function loadStore() {
+  try { store = JSON.parse(fs.readFileSync(DATA_FILE, "utf8")); return true; }
+  catch (e) { return false; }
+}
+function saveStoreSoon() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { fs.writeFileSync(DATA_FILE, JSON.stringify(store)); } catch (e) { console.error("save failed", e.message); }
+  }, 250);
+}
+function seedIfEmpty() {
+  if (Object.keys(store).length) return;
+  const now = Date.now();
+  store["meta/config"] = { level: "watch", announcement: "", announcedBy: "", announcedAt: 0, pin: "", pinOn: false, updatedAt: now, rooms: [
+    { id: "general", name: "General", desc: "Everyone in the group" },
+    { id: "team-a", name: "Team A", desc: "Field response crew" },
+    { id: "control", name: "Control room", desc: "Coordination and logistics" },
+  ] };
+  store["meta/map"] = {
+    west: 79.06, east: 79.24, south: 12.85, north: 12.99,
+    river: "10,72 56,84 104,96 150,118 196,132 252,140",
+    zones: [
+      { id: "z1", name: "Katpadi", risk: "watch", pts: "44,26 96,18 118,52 96,86 52,78", lx: 72, ly: 52 },
+      { id: "z2", name: "Gandhi Nagar", risk: "warning", pts: "118,52 168,40 186,78 150,104 96,86", lx: 142, ly: 72 },
+      { id: "z3", name: "Sathuvachari", risk: "normal", pts: "168,40 226,36 242,74 186,78", lx: 206, ly: 58 },
+      { id: "z4", name: "Old Town", risk: "warning", pts: "96,86 150,104 142,146 88,140 60,110", lx: 110, ly: 120 },
+      { id: "z5", name: "Thorapadi", risk: "danger", pts: "150,104 186,78 242,74 250,126 196,150 142,146", lx: 196, ly: 116 },
+      { id: "z6", name: "Bagayam", risk: "normal", pts: "60,110 88,140 78,178 30,166 24,124", lx: 58, ly: 146 },
+      { id: "z7", name: "Ariyur flats", risk: "watch", pts: "142,146 196,150 206,192 132,196 78,178 88,140", lx: 148, ly: 172 },
+    ],
+    gauges: [
+      { id: "g1", name: "Palar at Katpadi", level: 2.4, warn: 3.2, danger: 4.1, prev: 2.1, unit: "m" },
+      { id: "g2", name: "Palar at Vellore Fort", level: 1.9, warn: 3.0, danger: 3.8, prev: 1.9, unit: "m" },
+      { id: "g3", name: "Ponnai confluence", level: 3.4, warn: 3.3, danger: 4.4, prev: 2.8, unit: "m" },
+      { id: "g4", name: "Rainfall, last 24 h", level: 68, warn: 90, danger: 130, prev: 31, unit: "mm" },
+    ],
+    updatedAt: now
+  };
+  store["shelters/s1"] = { name: "Government Higher Sec. School, Katpadi", zone: "Katpadi", capacity: 320, occupancy: 84, status: "open", contact: "Warden desk, gate 2", x: 74, y: 44 };
+  store["shelters/s2"] = { name: "Community Hall, Gandhi Nagar", zone: "Gandhi Nagar", capacity: 180, occupancy: 172, status: "open", contact: "Ward office", x: 140, y: 66 };
+  store["shelters/s3"] = { name: "Municipal School, Thorapadi", zone: "Thorapadi", capacity: 250, occupancy: 250, status: "full", contact: "Headmaster's office", x: 200, y: 122 };
+  store["shelters/s4"] = { name: "Bagayam Marriage Hall", zone: "Bagayam", capacity: 140, occupancy: 12, status: "open", contact: "Caretaker", x: 56, y: 150 };
+  store["alerts/a-seed"] = {
+    level: "watch", title: "Palar levels rising after upstream release",
+    body: "Ponnai confluence has crossed its warning mark. Residents in Thorapadi and the Ariyur flats should move vehicles and livestock to higher ground tonight and keep documents in a waterproof bag.",
+    zones: ["Thorapadi", "Ariyur flats", "Old Town"], ts: now, by: "system"
+  };
+  saveStoreSoon();
+}
+
+/* ---------------- identity directory (people) ---------------- */
+const people = {}; // id -> {name, color}
+function isAdmin(id) { const m = store["members/" + id]; return !!(m && m.admin); }
+const ADMIN_ONLY_PREFIXES = ["meta/", "alerts/", "shelters/", "members/"];
+function requiresAdmin(p) { return ADMIN_ONLY_PREFIXES.some(pre => p.startsWith(pre)); }
+
+/* one-time admin claim code, printed at startup */
+const ADMIN_CODE = String(Math.floor(100000 + Math.random() * 899999));
+
+/* ---------------- SSE clients ---------------- */
+const clients = new Set(); // {res}
+function broadcast(obj) {
+  const line = "data: " + JSON.stringify(obj) + "\n\n";
+  clients.forEach(c => { try { c.res.write(line); } catch (e) { } });
+}
+
+/* ---------------- presence (ephemeral) ---------------- */
+const presence = {}; // id -> {presence:{}, updatedAt}
+function presenceList() { return Object.keys(presence).map(id => ({ id, presence: presence[id].presence, updatedAt: presence[id].updatedAt })); }
+setInterval(() => {
+  const cut = Date.now() - 20000;
+  let changed = false;
+  Object.keys(presence).forEach(id => { if (presence[id].updatedAt < cut) { delete presence[id]; changed = true; } });
+  if (changed) broadcast({ type: "presence", peers: presenceList() });
+}, 5000);
+
+/* ---------------- helpers ---------------- */
+function send(res, code, obj, extra) {
+  res.writeHead(code, Object.assign({ "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, extra || {}));
+  res.end(JSON.stringify(obj));
+}
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let chunks = [], size = 0;
+    req.on("data", c => { size += c.length; if (size > 24 * 1024 * 1024) { req.destroy(); reject(new Error("too large")); return; } chunks.push(c); });
+    req.on("end", () => { try { resolve(chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {}); } catch (e) { reject(e); } });
+    req.on("error", reject);
+  });
+}
+function deviceIdOf(req, q) { return (req.headers["x-device-id"] || (q && q.get("id")) || "").toString().slice(0, 80); }
+
+function shallowMerge(base, patch) {
+  const out = Object.assign({}, base || {});
+  for (const k in patch) out[k] = patch[k];
+  return out;
+}
+
+/* ---------------- request handling ---------------- */
+async function handleApi(req, res, u) {
+  const q = u.searchParams;
+  const id = deviceIdOf(req, q);
+
+  if (u.pathname === "/api/stream") {
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive",
+      "Access-Control-Allow-Origin": "*", "X-Accel-Buffering": "no"
+    });
+    res.write(": connected\n\n");
+    const c = { res };
+    clients.add(c);
+    const ping = setInterval(() => { try { res.write(": ping\n\n"); } catch (e) { } }, 15000);
+    req.on("close", () => { clients.delete(c); clearInterval(ping); });
+    return;
+  }
+
+  if (u.pathname === "/api/info" && req.method === "GET") {
+    return send(res, 200, { urls: lanUrls(), adminCodeHint: "printed in the server terminal" });
+  }
+
+  if (u.pathname === "/api/identity" && req.method === "POST") {
+    const body = await readBody(req).catch(() => ({}));
+    const pid = (body.id || id || "").slice(0, 80);
+    if (!pid) return send(res, 400, { code: "invalid_argument", message: "missing id" });
+    people[pid] = { name: String(body.name || "").slice(0, 60), color: String(body.color || "#5b8a99").slice(0, 20) };
+    return send(res, 200, { ok: true });
+  }
+
+  if (u.pathname === "/api/people" && req.method === "GET") {
+    const ids = (q.get("ids") || "").split(",").filter(Boolean);
+    const out = {};
+    ids.forEach(i => { out[i] = people[i] || null; });
+    return send(res, 200, out);
+  }
+  if (u.pathname === "/api/people/search" && req.method === "GET") {
+    const qq = (q.get("q") || "").toLowerCase();
+    const rows = Object.keys(people).map(pid => ({ id: pid, name: people[pid].name, color: people[pid].color }))
+      .filter(p => p.name && (!qq || p.name.toLowerCase().includes(qq)))
+      .slice(0, 8);
+    return send(res, 200, rows);
+  }
+
+  if (u.pathname === "/api/claim-admin" && req.method === "POST") {
+    const body = await readBody(req).catch(() => ({}));
+    if (String(body.code || "").trim() !== ADMIN_CODE) return send(res, 403, { code: "invalid_argument", message: "wrong code" });
+    const pid = (body.id || id || "").slice(0, 80);
+    if (!pid) return send(res, 400, { code: "invalid_argument", message: "missing id" });
+    store["members/" + pid] = shallowMerge(store["members/" + pid], { admin: true, updatedAt: Date.now() });
+    saveStoreSoon();
+    broadcast({ type: "doc", path: "members/" + pid, exists: true, data: store["members/" + pid] });
+    return send(res, 200, { ok: true });
+  }
+
+  if (u.pathname === "/api/presence" && req.method === "POST") {
+    const body = await readBody(req).catch(() => ({}));
+    const pid = (body.id || id || "").slice(0, 80);
+    if (!pid) return send(res, 400, { code: "invalid_argument", message: "missing id" });
+    const cur = presence[pid] || { presence: {} };
+    presence[pid] = { presence: shallowMerge(cur.presence, body.patch || {}), updatedAt: Date.now() };
+    broadcast({ type: "presence", peers: presenceList() });
+    return send(res, 200, { ok: true });
+  }
+  if (u.pathname === "/api/emit" && req.method === "POST") {
+    const body = await readBody(req).catch(() => ({}));
+    const pid = (body.id || id || "").slice(0, 80);
+    broadcast({ type: "room", topic: String(body.topic || "").slice(0, 48), data: body.data, from: pid });
+    return send(res, 200, { ok: true });
+  }
+
+  if (u.pathname === "/api/doc" && req.method === "GET") {
+    const p = q.get("path") || "";
+    if (!p) return send(res, 400, { code: "invalid_argument", message: "missing path" });
+    if (p.startsWith("addresses/")) {
+      const owner = p.slice("addresses/".length);
+      if (owner !== id && !isAdmin(id)) return send(res, 200, { exists: false, data: null });
+    }
+    const exists = Object.prototype.hasOwnProperty.call(store, p);
+    return send(res, 200, { exists, data: exists ? store[p] : null });
+  }
+  if (u.pathname === "/api/doc" && (req.method === "POST" || req.method === "DELETE")) {
+    const p = req.method === "DELETE" ? (q.get("path") || "") : null;
+    let body = {};
+    if (req.method === "POST") body = await readBody(req).catch(() => null);
+    if (body === null) return send(res, 400, { code: "invalid_argument", message: "bad json" });
+    const path_ = req.method === "DELETE" ? p : (body.path || "");
+    if (!path_ || path_.split("/").length < 2) return send(res, 400, { code: "invalid_argument", message: "bad path" });
+
+    if (path_.startsWith("addresses/")) {
+      const owner = path_.slice("addresses/".length);
+      if (owner !== id && !isAdmin(id)) return send(res, 403, { code: "invalid_argument", message: "not permitted" });
+    } else if (requiresAdmin(path_)) {
+      if (!isAdmin(id)) return send(res, 403, { code: "invalid_argument", message: "admins only" });
+    }
+
+    if (req.method === "DELETE") {
+      delete store[path_]; saveStoreSoon();
+      broadcast({ type: "doc", path: path_, exists: false, data: null });
+      return send(res, 200, { ok: true });
+    }
+    const data = body.data;
+    if (typeof data !== "object" || data === null || Array.isArray(data)) return send(res, 400, { code: "invalid_argument", message: "data must be an object" });
+    if (JSON.stringify(data).length > 512000) return send(res, 400, { code: "invalid_argument", message: "document too large" });
+    store[path_] = body.merge ? shallowMerge(store[path_], data) : data;
+    saveStoreSoon();
+    broadcast({ type: "doc", path: path_, exists: true, data: store[path_] });
+    return send(res, 200, { ok: true });
+  }
+
+  if (u.pathname === "/api/collection" && req.method === "GET") {
+    const p = q.get("path") || "";
+    if (!p) return send(res, 400, { code: "invalid_argument", message: "missing path" });
+    if (p === "addresses" && !isAdmin(id)) return send(res, 200, []);
+    const prefix = p + "/";
+    const rows = Object.keys(store).filter(k => k.startsWith(prefix) && k.slice(prefix.length).indexOf("/") === -1)
+      .map(k => Object.assign({ id: k.slice(prefix.length) }, store[k]));
+    return send(res, 200, rows);
+  }
+
+  return send(res, 404, { code: "invalid_argument", message: "no such endpoint" });
+}
+
+function serveStatic(req, res) {
+  fs.readFile(INDEX_FILE, (err, buf) => {
+    if (err) { res.writeHead(500); res.end("index.html not found — run this from the folder that contains server.js and public/index.html"); return; }
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(buf);
+  });
+}
+
+function requestListener(req, res) {
+  let u;
+  try { u = new URL(req.url, "http://x"); } catch (e) { res.writeHead(400); res.end(); return; }
+  if (req.method === "OPTIONS") { res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type,x-device-id", "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS" }); res.end(); return; }
+  if (u.pathname.startsWith("/api/")) { handleApi(req, res, u).catch(e => send(res, 500, { code: "unavailable", message: e.message })); return; }
+  if (u.pathname === "/favicon.ico") { res.writeHead(204); res.end(); return; }
+  serveStatic(req, res);
+}
+
+function lanUrls() {
+  const nets = os.networkInterfaces();
+  const out = [];
+  for (const name in nets) for (const n of nets[name]) if (n.family === "IPv4" && !n.internal) out.push(n.address);
+  return out;
+}
+
+/* ---------------- boot ---------------- */
+loadStore();
+seedIfEmpty();
+
+const httpServer = http.createServer(requestListener);
+httpServer.listen(PORT, () => {
+  const ips = lanUrls();
+  console.log("");
+  console.log("  MeridianSOS — local server running");
+  console.log("  ───────────────────────────────────");
+  console.log("  On this machine:   http://localhost:" + PORT);
+  ips.forEach(ip => console.log("  On your WiFi:      http://" + ip + ":" + PORT));
+  console.log("");
+  console.log("  Admin claim code (enter once in Settings → Claim admin access):");
+  console.log("  >>> " + ADMIN_CODE + " <<<");
+  console.log("");
+  console.log("  Note: on the LAN addresses above (plain http, not localhost), browsers");
+  console.log("  block microphone, live location and notifications for security reasons.");
+  console.log("  Those three features work fully at http://localhost:" + PORT + " on this machine.");
+  console.log("  To unlock them on every device, add cert.pem + key.pem next to server.js");
+  console.log("  (see README.md) and use the https:// address instead.");
+  console.log("");
+});
+
+if (fs.existsSync(CERT_FILE) && fs.existsSync(KEY_FILE)) {
+  try {
+    const opts = { cert: fs.readFileSync(CERT_FILE), key: fs.readFileSync(KEY_FILE) };
+    https.createServer(opts, requestListener).listen(HTTPS_PORT, () => {
+      const ips = lanUrls();
+      console.log("  HTTPS also running (mic/location/notifications unlocked everywhere):");
+      console.log("  On this machine:   https://localhost:" + HTTPS_PORT);
+      ips.forEach(ip => console.log("  On your WiFi:      https://" + ip + ":" + HTTPS_PORT));
+      console.log("  Other devices will see a certificate warning once — that's expected");
+      console.log("  for a self-signed local certificate; tap through it to continue.");
+      console.log("");
+    });
+  } catch (e) { console.log("  cert.pem/key.pem found but couldn't start HTTPS:", e.message); }
+}
+
+process.on("SIGINT", () => { console.log("\n  Stopping MeridianSOS…"); try { fs.writeFileSync(DATA_FILE, JSON.stringify(store)); } catch (e) { } process.exit(0); });

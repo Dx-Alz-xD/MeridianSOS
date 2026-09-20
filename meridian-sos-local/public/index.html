@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>MeridianSOS — Palar Basin flood response</title>
+<title>MeridianSOS — Meridian city flood response</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -85,6 +85,13 @@ button,input,select,textarea{font:inherit;color:inherit}
 .navbtn svg{width:17px;height:17px;flex:0 0 17px;opacity:.9}
 .navbtn .count{margin-left:auto;font-size:.72rem;padding:1px 6px;border-radius:20px;background:var(--hydro);color:#fff;font-family:"IBM Plex Mono",monospace}
 .navbtn .count.hot{background:var(--signal)}
+#fwlink{display:flex;align-items:center;gap:9px;margin:8px 10px 0;padding:9px 10px;
+  border:1px solid var(--line);border-radius:var(--radius-s);text-decoration:none;
+  color:var(--ink-2);font-size:.78rem;line-height:1.25}
+#fwlink:hover{border-color:var(--hydro);color:var(--ink)}
+#fwlink b{color:var(--ink);font-weight:600}
+.fwsub{color:var(--ink-3);font-size:.7rem}
+.fwdot{width:8px;height:8px;border-radius:50%;background:var(--hydro);flex:0 0 auto}
 #railfoot{border-top:1px solid var(--line);padding:10px 12px;display:flex;align-items:center;gap:8px}
 #railfoot .who{min-width:0;flex:1}
 #railfoot .who .n{font-size:.84rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -371,9 +378,14 @@ hr.rule{border:0;border-top:1px solid var(--line);margin:16px 0}
           <svg class="mk" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="none" stroke="var(--hydro)" stroke-width="1.5"/><path d="M2 19c3.4 0 3.4-3.6 6.8-3.6S12.2 19 15.6 19s3.4-3.6 6.8-3.6S25.8 19 29.2 19" fill="none" stroke="var(--hydro)" stroke-width="1.8" stroke-linecap="round"/><path d="M16 4.5v7M16 14.5v.2" stroke="var(--signal)" stroke-width="2.4" stroke-linecap="round"/></svg>
           <b>MeridianSOS</b>
         </div>
-        <div class="sub">Palar Basin flood response</div>
+        <div class="sub">Meridian city flood response</div>
       </div>
       <nav id="nav"></nav>
+      <a id="fwlink" href="#" target="_blank" rel="noopener"
+         title="The forecast this control room is acting on">
+        <span class="fwdot"></span>
+        <span><b>Flood Watch</b><br><span class="fwsub">forecast &amp; routing</span></span>
+      </a>
       <div id="railfoot">
         <img class="avatar" id="meav" alt="">
         <div class="who"><div class="n" id="mename">—</div><div class="r" id="merole"></div></div>
@@ -720,14 +732,14 @@ const LS = {
 
 /* ---------- defaults (seeded once by an admin) ---------- */
 const DEFAULT_ROOMS = [
-  { id: "general", name: "General", desc: "Everyone in the basin" },
+  { id: "general", name: "General", desc: "Everyone in Meridian" },
   { id: "team-a", name: "Team A", desc: "Field response crew" },
   { id: "control", name: "Control room", desc: "Coordination and logistics" },
 ];
 const DEFAULT_GAUGES = [
-  { id: "g1", name: "Palar at Katpadi", level: 2.4, warn: 3.2, danger: 4.1, prev: 2.1, unit: "m" },
-  { id: "g2", name: "Palar at Vellore Fort", level: 1.9, warn: 3.0, danger: 3.8, prev: 1.9, unit: "m" },
-  { id: "g3", name: "Ponnai confluence", level: 3.4, warn: 3.3, danger: 4.4, prev: 2.8, unit: "m" },
+  { id: "g1", name: "Meridian Channel at Old Port", level: 2.4, warn: 3.2, danger: 4.1, prev: 2.1, unit: "m" },
+  { id: "g2", name: "Meridian Channel at Rivergate", level: 1.9, warn: 3.0, danger: 3.8, prev: 1.9, unit: "m" },
+  { id: "g3", name: "Ghost Channel culvert", level: 3.4, warn: 3.3, danger: 4.4, prev: 2.8, unit: "m" },
   { id: "g4", name: "Rainfall, last 24 h", level: 68, warn: 90, danger: 130, prev: 31, unit: "mm" },
 ];
 const DEFAULT_ZONES = [
@@ -757,9 +769,18 @@ const LEVELS = {
 /* ============================================================
    Boot
    ============================================================ */
+/* The flood dashboard is served separately (scripts/run_demo.py starts both).
+   Resolve it against the CURRENT host so the link also works for someone who
+   opened this over WiFi on their phone, not just on the server machine. */
+const FLOOD_WATCH_PORT = 8731;
+(function linkFloodWatch(){
+  const a = document.getElementById("fwlink");
+  if (a) a.href = location.protocol + "//" + location.hostname + ":" + FLOOD_WATCH_PORT + "/";
+})();
+
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: "dash" },
-  { id: "map", label: "Basin map", icon: "map" },
+  { id: "map", label: "City map", icon: "map" },
   { id: "alerts", label: "Alerts", icon: "alert" },
   { id: "shelters", label: "Shelters", icon: "shelter" },
   { id: "report", label: "Report", icon: "report" },
@@ -1618,7 +1639,7 @@ function gaugeState(g) {
 }
 function viewDashboard() {
   const v = el("div");
-  v.appendChild(head("Basin status", "Live picture of the Palar and its feeders, the alerts in force, and who needs help right now."));
+  v.appendChild(head("City status", "Live picture of Meridian's channels, the alerts in force, and who needs help right now."));
   const w = el("div", { class: "wrap" });
   const lvl = S.config.level || "normal", L = LEVELS[lvl] || LEVELS.normal;
   w.appendChild(el("div", { class: "levelbanner lb-" + lvl }, [
@@ -1656,7 +1677,7 @@ function viewDashboard() {
   const s1 = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "Latest alerts" }), el("span", { class: "hint", text: "issued by the control room" })])]);
   const p1 = el("div", { class: "panel rowlist" });
   const top = S.alerts.slice(0, 3);
-  if (!top.length) p1.appendChild(el("div", { class: "empty" }, [el("b", { text: "No alerts in force" }), el("span", { text: "The basin is quiet." })]));
+  if (!top.length) p1.appendChild(el("div", { class: "empty" }, [el("b", { text: "No alerts in force" }), el("span", { text: "The city is quiet." })]));
   top.forEach(a => p1.appendChild(alertRow(a)));
   if (S.alerts.length > 3) p1.appendChild(el("div", { class: "row" }, [el("button", { class: "btn ghost sm", text: "See all " + S.alerts.length + " alerts", onclick: () => go("alerts") })]));
   s1.appendChild(p1); w.appendChild(s1);
@@ -1704,13 +1725,13 @@ function ll2xy(lat, lng) {
 }
 function viewMap() {
   const v = el("div");
-  v.appendChild(head("Basin map", "Zones coloured by current risk, with shelters, open SOS calls and citizen reports plotted where they were sent from."));
+  v.appendChild(head("City map", "Zones coloured by current risk, with shelters, open SOS calls and citizen reports plotted where they were sent from."));
   const w = el("div", { class: "wrap" });
   const info = el("div", { class: "mapinfo", text: "Tap a zone, shelter or marker for detail." });
   const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   s.setAttribute("viewBox", "0 0 260 210");
   s.setAttribute("role", "img");
-  s.setAttribute("aria-label", "Schematic map of the Palar basin response area");
+  s.setAttribute("aria-label", "Schematic map of the Meridian response area");
   const ns = "http://www.w3.org/2000/svg";
   const mk = (t, at) => { const n = document.createElementNS(ns, t); for (const k in at) n.setAttribute(k, at[k]); return n; };
   s.appendChild(mk("rect", { x: 0, y: 0, width: 260, height: 210, fill: "var(--surface-2)" }));
@@ -1727,7 +1748,7 @@ function viewMap() {
   });
   const riv = mk("polyline", { points: S.mapcfg.river || DEFAULT_MAP.river, class: "riverline", "stroke-width": "4", "stroke-opacity": ".85" });
   s.appendChild(riv);
-  const rivText = mk("text", { x: 20, y: 66, class: "zlabel", "fill-opacity": ".7" }); rivText.textContent = "Palar"; s.appendChild(rivText);
+  const rivText = mk("text", { x: 20, y: 66, class: "zlabel", "fill-opacity": ".7" }); rivText.textContent = "Meridian Channel"; s.appendChild(rivText);
   S.shelters.forEach(sh => {
     const g = mk("g", { class: "zone" });
     g.appendChild(mk("rect", { x: sh.x - 4.5, y: sh.y - 4.5, width: 9, height: 9, rx: 2, fill: sh.status === "open" ? "var(--hydro)" : "var(--ink-3)", stroke: "var(--surface)", "stroke-width": "1.2" }));
@@ -1950,7 +1971,7 @@ function viewReport() {
     } })])
   ]);
   w.appendChild(form);
-  const sec = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "Recent reports" }), el("span", { class: "hint", text: S.isAdmin ? "you can acknowledge and close these" : "from across the basin" })])]);
+  const sec = el("div", { class: "sec" }, [el("h2", {}, [el("span", { text: "Recent reports" }), el("span", { class: "hint", text: S.isAdmin ? "you can acknowledge and close these" : "from across the city" })])]);
   const p = el("div", { class: "panel rowlist" });
   if (!S.reports.length) p.appendChild(el("div", { class: "empty" }, [el("b", { text: "Nothing reported yet" }), el("span", { text: "Yours would be the first." })]));
   S.reports.slice(0, 40).forEach(r => {
@@ -2001,7 +2022,7 @@ function viewPrepare() {
   const prose = el("div", { class: "panel pad prose", style: "margin-top:14px" });
   prose.innerHTML = [
     "<h3>Before the water comes</h3><ul>",
-    "<li>Find out which zone you're in on the basin map, and which shelter serves it.</li>",
+    "<li>Find out which district you're in on the city map, and which shelter serves it.</li>",
     "<li>Walk the route to that shelter once in daylight. Note where it dips — that dip floods first.</li>",
     "<li>Set your address in Settings. Only administrators can see it, and it's what a rescue team works from if you can't speak.</li>",
     "</ul><h3>When a warning is issued</h3><ul>",
